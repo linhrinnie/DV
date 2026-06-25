@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xác nhận đặt phòng</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #eef1f5;
+    margin: 0;
+    padding: 20px 16px;
+    color: #1a1a1a;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+
+  .card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; color: #444; }
+  input, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d8dbe0; border-radius: 8px; font-size: 15px; font-family: inherit; }
+  input:focus, textarea:focus { outline: none; border-color: #2563eb; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  button { width: 100%; padding: 14px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; margin-top: 16px; cursor: pointer; }
+  button:active { background: #1d4ed8; }
+  button.secondary { background: #fff; color: #2563eb; border: 1px solid #2563eb; margin-top: 8px; }
+  button.add-hotel { background: #2563eb; color: #fff; margin-top: 14px; padding: 12px; font-size: 14.5px; }
+  button.add-roomtype { background: #fff; color: #2563eb; border: 1.5px dashed #2563eb; margin-top: 10px; padding: 9px; font-size: 13.5px; }
+  button.remove-link { width: auto; background: transparent; color: #e23636; border: none; padding: 0; margin: 0; font-size: 12.5px; font-weight: 600; text-decoration: underline; }
+
+  .hotel-block { border: 1.5px solid #c7d6f5; border-radius: 12px; padding: 12px; margin-top: 14px; background: #f5f8ff; }
+  .hotel-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+  .hotel-block-header .hotel-label { font-size: 13.5px; font-weight: 700; color: #1d4ed8; }
+  .roomtype-block { border: 1px solid #e3e5e9; border-radius: 10px; padding: 10px 12px; margin-top: 10px; background: #ffffff; }
+  .price-field { margin-top: 4px; }
+  .surcharge-section { margin-top: 8px; }
+  .surcharge-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; margin-top: 6px; }
+  .service-section { margin-top: 6px; }
+  .service-row-block { border: 1px solid #e3e5e9; border-radius: 8px; padding: 8px; margin-top: 8px; background: #fafbfc; }
+  .service-row { display: grid; grid-template-columns: 1.4fr 1fr 0.7fr auto; gap: 6px; align-items: center; margin-top: 6px; }
+  .service-row input { padding: 8px 10px; border: 1px solid #d8dbe0; border-radius: 8px; font-size: 13.5px; font-family: inherit; }
+  .service-row .remove-link { font-size: 12px; }
+  .surcharge-row select, .surcharge-row input { padding: 8px 10px; border: 1px solid #d8dbe0; border-radius: 8px; font-size: 13.5px; font-family: inherit; }
+  .surcharge-row .remove-link { font-size: 12px; }
+  .add-surcharge-btn { width: 100%; background: #fff; color: #c14a1f; border: 1.5px dashed #c14a1f; margin-top: 8px; padding: 8px; font-size: 13px; border-radius: 8px; cursor: pointer; }
+  .same-date-toggle { margin-top: 12px; padding: 8px 10px; background: #fff; border-radius: 8px; }
+  .amenity-checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin-top: 4px; }
+  .amenity-check-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #333; font-weight: 400; margin: 0; cursor: pointer; }
+  .amenity-check-item input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; }
+  .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: #333; margin: 0; cursor: pointer; }
+  .checkbox-label input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex-shrink: 0; }
+  .shared-date-row { margin-top: 8px; }
+  .roomtype-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+  .roomtype-block-header .roomtype-label { font-size: 12.5px; font-weight: 700; color: #555; }
+
+  .actions { display: flex; gap: 10px; margin-top: 14px; }
+  .actions button { margin-top: 0; }
+  .print-btn { background: #111827; margin-top: 10px; }
+  .print-btn:active { background: #000; }
+
+  .sheet-status { margin-top: 10px; font-size: 13px; line-height: 1.5; word-break: break-word; }
+  .sheet-status.ok { color: #15803d; }
+  .sheet-status.err { color: #dc2626; }
+  .sheet-status.loading { color: #6b7280; }
+  #sheet-load-section { border: 1.5px solid #dbeafe; }
+
+  .output-type-toggle { display: flex; gap: 10px; margin-bottom: 4px; }
+  .output-type-item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 8px; border: 1.5px solid #d8dbe0; border-radius: 10px; font-size: 14px; font-weight: 600; color: #555; cursor: pointer; }
+  .output-type-item.active { border-color: #2563eb; background: #f5f8ff; color: #1d4ed8; }
+  .output-type-item input[type="checkbox"] { width: 17px; height: 17px; margin: 0; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .wrap { max-width: 100%; }
+    .no-print { display: none !important; }
+    #form-section { display: none !important; }
+    .app-ticket .app-card, .email-ticket .email-shell {
+      box-shadow: none;
+      border: none;
+    }
+    @media (max-width: 640px) {
+      .email-ticket { display: none !important; }
+      .app-ticket { display: block !important; }
+    }
+  }
+
+  .lang-switch { display: flex; gap: 8px; margin-bottom: 14px; }
+  .lang-switch button { margin-top: 0; flex: 1; padding: 10px; font-size: 14px; background: #fff; color: #444; border: 1.5px solid #d8dbe0; }
+  .lang-switch button.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+  #result-section { display: none; }
+
+  .app-ticket { display: block; }
+  .email-ticket { display: none; }
+
+  .app-ticket .app-card { background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.10); }
+  .app-ticket .app-header { background: #1d4ed8; color: #fff; padding: 22px 20px 24px; position: relative; }
+  .app-ticket .app-header .status-pill { display: inline-block; background: rgba(255,255,255,0.18); font-size: 11px; font-weight: 600; letter-spacing: 0.4px; padding: 4px 10px; border-radius: 20px; margin-bottom: 10px; }
+  .app-ticket .app-header .title { font-size: 21px; font-weight: 700; margin: 0 0 4px; }
+  .app-ticket .app-header .subtitle { font-size: 13px; opacity: 0.85; margin: 0; }
+  .app-ticket .app-body { padding: 18px 18px 8px; }
+  .app-ticket .app-greeting { font-size: 13.5px; color: #333; margin: 0 0 14px; line-height: 1.5; }
+  .app-ticket .app-greeting .greet-name { font-weight: 700; }
+  .app-ticket .guest-row { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; margin-bottom: 14px; border-bottom: 1px solid #eef0f3; }
+  .app-ticket .guest-avatar { width: 42px; height: 42px; border-radius: 50%; background: #e6edff; color: #1d4ed8; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+  .app-ticket .guest-name { font-size: 15.5px; font-weight: 700; margin: 0; }
+  .app-ticket .guest-phone { font-size: 13px; color: #6b7280; margin: 2px 0 0; }
+  .app-ticket .guest-nationality { font-size: 13px; color: #6b7280; margin: 2px 0 0; }
+  .app-ticket .hotel-card { background: #f7f9fc; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+  .app-ticket .hotel-name-row { margin-bottom: 4px; }
+  .app-ticket .hotel-name { font-size: 15px; font-weight: 700; color: #111; }
+  .app-ticket .hotel-address { font-size: 12.5px; color: #8a8f98; margin: 0 0 10px; }
+  .app-ticket .code-strip { display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 10px; padding: 9px 12px; margin-bottom: 10px; border: 1px dashed #d8dde6; }
+  .app-ticket .code-strip .code-label { font-size: 11px; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.4px; }
+  .app-ticket .code-strip .code-value { font-size: 14.5px; font-weight: 700; color: #1d4ed8; letter-spacing: 0.5px; }
+  .app-ticket .section-label { font-size: 11px; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.4px; margin: 10px 0 6px; }
+  .app-ticket .room-info-box { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .app-ticket .shared-date-box { background: #eef2ff; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .app-ticket .room-detail-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+  .app-ticket .room-detail-row .rlbl { color: #6b7280; }
+  .app-ticket .room-detail-row .rval { font-weight: 600; color: #111; text-align: right; }
+  .app-ticket .room-tag { display: inline-block; background: #e6edff; color: #1d4ed8; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px; margin: 0 0 6px; }
+  .app-ticket .amenities-app { background: #fff; border-radius: 10px; padding: 10px 12px; margin-top: 4px; }
+  .app-ticket .amenities-app .am-title { font-size: 11px; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 6px; }
+  .app-ticket .amenities-app ul { margin: 0; padding-left: 0; list-style: none; }
+  .app-ticket .amenities-app li { font-size: 13.5px; color: #1a1a1a; padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+  .app-ticket .amenities-app li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #1d4ed8; flex-shrink: 0; }
+  .app-ticket .amenities-custom-text { font-size: 13.5px; color: #1a1a1a; line-height: 1.6; margin-top: 6px; white-space: pre-line; }
+  .app-ticket .note-strip { background: #fff8e6; border-radius: 10px; padding: 11px 13px; font-size: 13.5px; color: #6b5400; margin: 4px 0 16px; }
+  .service-block-app { background: #f0f4ff; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+  .service-block-app .service-block-title { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 6px; }
+  .transport-item-box { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .transport-item-box:last-child { margin-bottom: 0; }
+  .transport-item-name { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 6px; }
+  .transport-item-grid { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13.5px; }
+  .transport-item-grid .ti-label { color: #6b7280; }
+  .transport-item-grid .ti-value { font-weight: 600; color: #111; }
+  .transport-item-price { display: flex; justify-content: space-between; padding-top: 6px; margin-top: 4px; border-top: 1px dashed #e3e5e9; font-size: 13.5px; }
+  .transport-item-price .ti-label { color: #6b7280; font-weight: 600; }
+  .transport-item-price .ti-value-price { font-weight: 700; color: #c14a1f; }
+  .app-ticket .note-strip b { color: #6b5400; }
+  .app-ticket .hotel-note-strip { background: #fff8e6; border-radius: 10px; padding: 9px 12px; font-size: 13px; color: #6b5400; margin-top: 8px; }
+  .app-ticket .hotel-note-strip b { color: #6b5400; }
+  .app-ticket .app-footer { text-align: center; font-size: 13px; color: #9aa0a8; padding: 0 18px 20px; }
+
+  @media (min-width: 641px) {
+    body { padding: 40px 16px; }
+    .wrap { max-width: 620px; }
+    .app-ticket { display: none; }
+    .email-ticket { display: block; }
+  }
+
+  .email-ticket .email-shell { background: #ffffff; border: 1px solid #e2e5ea; border-radius: 4px; }
+  .email-ticket .email-topbar { background: #0f2a5c; color: #ffffff; padding: 28px 40px; text-align: center; }
+  .email-ticket .email-topbar .email-status-pill { display: inline-block; background: rgba(255,255,255,0.18); font-size: 12px; font-weight: 600; letter-spacing: 0.4px; padding: 4px 12px; border-radius: 20px; margin: 0 0 12px; }
+  .email-ticket .email-topbar .headline { font-size: 24px; font-weight: 700; margin: 0; }
+  .email-ticket .email-greeting { padding: 32px 40px 0; font-size: 14.5px; color: #333; line-height: 1.6; }
+  .email-ticket .email-greeting .greet-name { font-weight: 700; }
+  .email-ticket .summary-table { margin: 24px 40px 0; border: 1px solid #e2e5ea; border-radius: 4px; overflow: hidden; }
+  .email-ticket .summary-table table { width: 100%; border-collapse: collapse; }
+  .email-ticket .summary-table td { padding: 11px 16px; font-size: 13.5px; border-bottom: 1px solid #eef0f3; }
+  .email-ticket .summary-table tr:last-child td { border-bottom: none; }
+  .email-ticket .summary-table td.lbl { color: #6b7280; width: 38%; background: #fafbfc; }
+  .email-ticket .summary-table td.val { font-weight: 600; color: #111; }
+  .email-ticket .hotel-section { margin: 28px 40px 0; padding-top: 22px; border-top: 2px solid #0f2a5c; }
+  .email-ticket .hotel-section .hotel-eyebrow { font-size: 11.5px; letter-spacing: 0.6px; text-transform: uppercase; color: #0f2a5c; font-weight: 700; margin: 0 0 4px; }
+  .email-ticket .hotel-section .hotel-title { font-size: 19px; font-weight: 700; color: #111; margin: 0 0 4px; }
+  .email-ticket .hotel-section .hotel-address-line { font-size: 13px; color: #8a8f98; margin: 0 0 14px; }
+  .email-ticket .room-section-label { font-size: 11.5px; letter-spacing: 0.5px; text-transform: uppercase; color: #6b7280; font-weight: 700; margin: 14px 0 10px; }
+  .email-ticket .detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px 24px; margin-bottom: 6px; }
+  .email-ticket .detail-grid.dates-grid { grid-template-columns: 1fr 1fr; margin-top: 14px; }
+  .email-ticket .detail-grid.shared-dates-grid { background: #eef2ff; border-radius: 4px; padding: 12px 14px; margin: 0 0 16px; }
+  .email-ticket .detail-grid .detail-item.full { grid-column: 1 / -1; }
+  .email-ticket .detail-item .d-label { font-size: 11px; color: #9aa0a8; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .email-ticket .detail-item .d-value { font-size: 15px; font-weight: 600; color: #111; }
+  .email-ticket .room-entry { border-top: 1px dashed #e2e5ea; padding-top: 16px; margin-top: 16px; }
+  .email-ticket .room-entry-tag { display: inline-block; background: #eef2ff; color: #0f2a5c; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 3px; margin-bottom: 10px; }
+  .email-ticket .amenities-email { margin-top: 16px; padding-top: 16px; border-top: 1px dashed #e2e5ea; }
+  .email-ticket .amenities-email .ae-title { font-size: 11px; color: #9aa0a8; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+  .email-ticket .amenities-email ul { margin: 0; padding-left: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+  .email-ticket .amenities-email li { font-size: 13.5px; color: #1a1a1a; padding-left: 16px; position: relative; }
+  .email-ticket .amenities-email li::before { content: "✓"; position: absolute; left: 0; color: #0f2a5c; font-weight: 700; font-size: 12px; }
+  .email-ticket .amenities-custom-text { font-size: 13.5px; color: #1a1a1a; line-height: 1.7; margin-top: 8px; white-space: pre-line; }
+  .email-ticket .email-note { margin: 28px 40px 0; background: #fff9ec; border-left: 3px solid #d9a300; padding: 12px 16px; font-size: 13.5px; color: #6b5400; }
+  .service-block-email { margin: 24px 40px 0; background: #f0f4ff; border-radius: 4px; padding: 14px 16px; }
+  .service-block-email .service-block-title-email { font-size: 13.5px; font-weight: 700; color: #374151; margin: 0 0 8px; }
+  .email-ticket .hotel-note-strip-email { background: #fff9ec; border-left: 3px solid #d9a300; padding: 10px 14px; font-size: 13px; color: #6b5400; margin-top: 10px; }
+  .email-ticket .email-footer { margin-top: 32px; padding: 22px 40px 28px; border-top: 1px solid #e2e5ea; text-align: center; font-size: 13px; color: #9aa0a8; }
+  .email-ticket .email-footer .thank-line { font-size: 14.5px; color: #333; margin-bottom: 6px; }
+
+  /* ===== PAYMENT BLOCK (Chi Tiết Thanh Toán) ===== */
+  .pay-app-card { background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.10); margin-top: 16px; }
+  .pay-app-card.standalone { margin-top: 0; }
+  .pay-app-header { background: #c14a1f; color: #fff; padding: 22px 20px 24px; }
+  .pay-app-header .title { font-size: 21px; font-weight: 700; margin: 0; }
+  .pay-app-body { padding: 16px 18px 18px; }
+  .pay-app-hotel-name { font-size: 14.5px; font-weight: 700; color: #111; margin: 12px 0 6px; }
+  .pay-app-hotel-name:first-child { margin-top: 0; }
+  .pay-app-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+  .pay-app-row .plbl { color: #6b7280; }
+  .pay-app-row .pval { font-weight: 600; color: #111; text-align: right; }
+  .pay-app-hotel-subtotal { display: flex; justify-content: space-between; padding: 10px 12px; background: #fce8de; border-radius: 10px; margin: 8px 0 4px; font-size: 14px; }
+  .pay-app-hotel-subtotal .sub-lbl { color: #9c3d14; font-weight: 600; }
+  .pay-app-hotel-subtotal .sub-val { color: #9c3d14; font-weight: 700; }
+  .pay-app-grand-total { background: #c14a1f; color: #fff; border-radius: 14px; padding: 16px 18px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .pay-app-grand-total .gt-label { font-size: 14px; font-weight: 600; }
+  .pay-app-grand-total .gt-value { font-size: 20px; font-weight: 700; }
+
+  .pay-app-room-box { background: #fff7f3; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .pay-app-room-tag { display: inline-block; background: #fce8de; color: #c14a1f; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px; margin: 0 0 6px; }
+  .pay-app-shared-date { background: #fce8de; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+
+  .pay-email-section { margin: 24px 40px 0; padding-top: 20px; border-top: 2px solid #c14a1f; }
+  .pay-email-section.standalone { margin: 0 40px; padding-top: 0; border-top: none; }
+  .pay-email-topbar { background: #c14a1f; color: #fff; padding: 28px 40px; text-align: center; margin: 0 -40px 24px; }
+  .pay-email-topbar .headline { font-size: 24px; font-weight: 700; margin: 0; }
+  .pay-email-section.standalone .pay-email-title { display: none; }
+  .pay-email-title { font-size: 19px; font-weight: 700; color: #111; margin: 0 0 14px; }
+  .pay-email-hotel-name { font-size: 15px; font-weight: 700; color: #111; margin: 16px 0 8px; }
+  .pay-email-hotel-name:first-of-type { margin-top: 0; }
+  .pay-email-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  .pay-email-table td { padding: 8px 0; font-size: 13.5px; border-bottom: 1px solid #f3f0ee; }
+  .pay-email-table td.plbl { color: #6b7280; width: 50%; }
+  .pay-email-table td.pval { font-weight: 600; color: #111; text-align: right; }
+  .pay-email-subtotal { display: flex; justify-content: space-between; padding: 10px 16px; background: #fce8de; border-radius: 4px; margin: 6px 0 10px; font-size: 14px; }
+  .pay-email-subtotal .sub-lbl { color: #9c3d14; font-weight: 600; }
+  .pay-email-subtotal .sub-val { color: #9c3d14; font-weight: 700; }
+  .pay-email-grand-total { margin: 20px 40px 0; background: #c14a1f; color: #fff; border-radius: 4px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .pay-email-grand-total .gt-label { font-size: 15px; font-weight: 600; }
+  .pay-email-grand-total .gt-value { font-size: 21px; font-weight: 700; }
+
+  .pay-email-room-entry { border-top: 1px dashed #e2e5ea; padding-top: 14px; margin-top: 14px; }
+  .pay-email-room-tag { display: inline-block; background: #fce8de; color: #9c3d14; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 3px; margin-bottom: 8px; }
+  .pay-email-shared-dates { background: #fce8de; border-radius: 4px; padding: 12px 14px; margin: 0 0 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; }
+  .pay-email-shared-dates .d-label { font-size: 11px; color: #9c3d14; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .pay-email-shared-dates .d-value { font-size: 15px; font-weight: 600; color: #111; }
+  .pay-email-detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px 24px; margin-bottom: 6px; }
+  .pay-email-detail-grid.dates { grid-template-columns: 1fr 1fr; margin-top: 12px; }
+  .pay-email-detail-grid .d-label { font-size: 11px; color: #9aa0a8; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .pay-email-detail-grid .d-value { font-size: 15px; font-weight: 600; color: #111; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card" id="output-type-section">
+    <label style="margin-top:0;">Chọn loại muốn xuất</label>
+    <div class="output-type-toggle">
+      <label class="output-type-item active" id="toggle-confirm-label">
+        <input type="checkbox" id="toggle-confirm" checked onchange="updateOutputToggle()"> Xác nhận đặt phòng
+      </label>
+      <label class="output-type-item active" id="toggle-payment-label">
+        <input type="checkbox" id="toggle-payment" checked onchange="updateOutputToggle()"> Chi Tiết Thanh Toán
+      </label>
+    </div>
+  </div>
+
+  <div class="card" id="sheet-load-section">
+    <label>Link Google Sheet (dạng CSV, publish to web — cần có cột Giá P/Đ nếu xuất thanh toán)</label>
+    <input type="text" id="f-sheet-url" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQR4_9aexcL5JjXfSYIhmOF5mTvXVB2sz-0tnEwWJ2uGUWScrVJgMbMeXueJ0uHWVNM7oVD0x4Ze9LE/pub?gid=885574999&single=true&output=csv">
+
+    <label>Mã nhóm booking</label>
+    <input type="text" id="f-sheet-code" placeholder="VD: QN-20260722">
+
+    <button type="button" onclick="loadFromSheet()">📥 Tải từ Google Sheet (điền vào form)</button>
+    <div id="sheet-status" class="sheet-status"></div>
+  </div>
+
+  <div class="card" id="form-section">
+    <label>Tên khách</label>
+    <input type="text" id="f-name" placeholder="Nguyễn Văn A">
+
+    <label>Số điện thoại</label>
+    <input type="text" id="f-phone" placeholder="09xxxxxxxx">
+
+    <div id="hotels-container"></div>
+
+    <button type="button" class="add-hotel" onclick="addHotelBlock()">+ Thêm khách sạn khác</button>
+
+    <label style="margin-top:16px;">Dịch vụ di chuyển (không bắt buộc)</label>
+    <div class="service-section" id="transport-section"></div>
+    <button type="button" class="add-surcharge-btn" onclick="addServiceRow('transport')">+ Thêm dịch vụ di chuyển</button>
+
+    <label style="margin-top:14px;">Dịch vụ khác (không bắt buộc)</label>
+    <div class="service-section" id="otherservices-section"></div>
+    <button type="button" class="add-surcharge-btn" onclick="addServiceRow('otherservices')">+ Thêm dịch vụ khác</button>
+
+    <label style="margin-top:16px;">Ghi chú đặc biệt (không bắt buộc)</label>
+    <textarea id="f-note" rows="2" placeholder="VD: Tặng late check-out, view biển..."></textarea>
+
+    <div class="lang-switch">
+      <button type="button" id="btn-lang-vi" class="active" onclick="setLang('vi')">🇻🇳 Xuất tiếng Việt</button>
+      <button type="button" id="btn-lang-en" onclick="setLang('en')">🇺🇸 Xuất tiếng Anh</button>
+    </div>
+
+    <button onclick="generateTicket()">Tạo phiếu xác nhận</button>
+  </div>
+
+  <div id="result-section">
+
+    <div class="app-ticket">
+      <div class="app-card" id="confirm-app-card">
+        <div class="app-header">
+          <div class="status-pill" id="t-status-pill">ĐÃ XÁC NHẬN</div>
+          <p class="title" id="t-main-title">XÁC NHẬN ĐẶT PHÒNG</p>
+          <p class="subtitle" id="app-code-summary" style="display:none;">Mã đặt phòng của bạn</p>
+        </div>
+        <div class="app-body">
+          <p class="app-greeting" id="app-greeting">
+            <span id="app-greeting-prefix">Kính gửi</span> <span class="greet-name" id="app-guest-name-greet">-</span>,<br>
+            <span id="app-greeting-body">Cảm ơn quý khách đã đặt phòng. Dưới đây là thông tin chi tiết về đơn đặt phòng của quý khách.</span>
+          </p>
+          <div class="guest-row">
+            <div class="guest-avatar" id="app-avatar">?</div>
+            <div>
+              <p class="guest-name" id="app-guest-name">-</p>
+              <p class="guest-phone" id="app-guest-phone">-</p>
+              <p class="guest-nationality" id="app-guest-nationality" style="display:none;">-</p>
+            </div>
+          </div>
+          <div id="app-hotels-container"></div>
+          <div class="service-block-app" id="app-transport-block" style="display:none;">
+            <div class="service-block-title">Dịch vụ di chuyển</div>
+            <div id="app-transport-list"></div>
+          </div>
+          <div class="service-block-app" id="app-otherservices-block" style="display:none;">
+            <div class="service-block-title">Dịch vụ khác</div>
+            <div id="app-otherservices-list"></div>
+          </div>
+          <div class="note-strip" id="app-notebox" style="display:none;">
+            <b id="t-note-label-app">Ghi chú:</b> <span id="app-note"></span>
+          </div>
+        </div>
+        <div class="app-footer" id="t-footer-app">Cảm ơn quý khách đã sử dụng dịch vụ.<br>Chúc quý khách có kỳ nghỉ vui vẻ!</div>
+      </div>
+
+      <div class="pay-app-card" id="pay-app-card">
+        <div class="pay-app-header">
+          <p class="title" id="pay-app-title">Chi Tiết Thanh Toán</p>
+        </div>
+        <div class="pay-app-body" id="pay-app-body"></div>
+      </div>
+    </div>
+
+    <div class="email-ticket">
+      <div class="email-shell">
+        <div id="confirm-email-block">
+          <div class="email-topbar">
+            <p class="email-status-pill" id="t-status-pill-2">ĐÃ XÁC NHẬN</p>
+            <p class="headline" id="t-main-title-2">Xác nhận đặt phòng</p>
+          </div>
+          <div class="email-greeting">
+            <span id="t-greeting-prefix">Kính gửi</span> <span class="greet-name" id="email-guest-name">-</span>,<br>
+            <span id="t-greeting-body">Cảm ơn quý khách đã đặt phòng. Dưới đây là thông tin chi tiết về đơn đặt phòng của quý khách.</span>
+          </div>
+          <div class="summary-table">
+            <table>
+              <tr><td class="lbl" id="t-label-name">Tên khách</td><td class="val" id="email-guest-name-2">-</td></tr>
+              <tr><td class="lbl" id="t-label-phone">Số điện thoại</td><td class="val" id="email-guest-phone">-</td></tr>
+              <tr id="email-nationality-row" style="display:none;"><td class="lbl" id="t-label-nationality">Quốc tịch</td><td class="val" id="email-guest-nationality">-</td></tr>
+            </table>
+          </div>
+
+          <div id="email-hotels-container"></div>
+
+          <div class="service-block-email" id="email-transport-block" style="display:none;">
+            <p class="service-block-title-email">Dịch vụ di chuyển</p>
+            <div id="email-transport-list"></div>
+          </div>
+          <div class="service-block-email" id="email-otherservices-block" style="display:none;">
+            <p class="service-block-title-email">Dịch vụ khác</p>
+            <div id="email-otherservices-list"></div>
+          </div>
+
+          <div class="email-note" id="email-notebox" style="display:none;">
+            <b id="t-note-label-email">Ghi chú đặc biệt:</b> <span id="email-note"></span>
+          </div>
+        </div>
+
+        <div class="pay-email-section" id="pay-email-section">
+          <div class="pay-email-topbar" id="pay-email-topbar" style="display:none;">
+            <p class="headline">Chi Tiết Thanh Toán</p>
+          </div>
+          <p class="pay-email-title" id="pay-email-title">Chi Tiết Thanh Toán</p>
+          <div id="pay-email-body"></div>
+        </div>
+
+        <div class="email-footer">
+          <div class="thank-line" id="t-thanks-1">Cảm ơn quý khách đã sử dụng dịch vụ.</div>
+          <span id="t-thanks-2">Chúc quý khách có kỳ nghỉ vui vẻ!</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions no-print">
+      <button class="secondary" onclick="backToForm()">&larr; Sửa lại</button>
+      <button onclick="newTicket()">+ Tạo phiếu mới</button>
+    </div>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ In / Lưu PDF</button>
+  </div>
+</div>
+
+<script>
+let hotelCount = 0;
+let roomTypeCounters = {};
+let currentLang = 'vi';
+
+const COMMON_AMENITIES = [
+  'Ăn sáng miễn phí', 'Hồ bơi', 'Gym / phòng tập', 'Wifi miễn phí',
+  'Bãi đỗ xe', 'Đưa đón sân bay', 'Spa', 'Nhận phòng sớm',
+  'Trả phòng muộn', 'Bar / Lounge'
+];
+
+const ABBREVIATION_MAP = {
+  'TE': 'Phụ thu trẻ em',
+  'EB': 'Phụ thu giường phụ',
+  'NL': 'Phụ thu thêm người lớn',
+  'VMB': 'Vé máy bay',
+  'OTO': 'Ô tô'
+};
+
+const SURCHARGE_OPTIONS = ['TE', 'EB', 'NL', 'Khác'];
+
+function expandAbbreviation(name) {
+  if (!name) return '';
+  const key = name.trim().toUpperCase();
+  return ABBREVIATION_MAP[key] || name.trim();
+}
+
+const I18N = {
+  vi: {
+    statusPill: 'ĐÃ XÁC NHẬN',
+    mainTitle: 'XÁC NHẬN ĐẶT PHÒNG',
+    brand: 'Dịch vụ đặt phòng',
+    codeSummaryPrefix: 'Mã: ',
+    codeSummaryDefault: 'Mã đặt phòng của bạn',
+    bookingCode: 'Mã đặt phòng',
+    hotelWord: 'Khách sạn',
+    roomTypeWord: 'Hạng phòng',
+    roomLabel: 'Phòng',
+    quantity: 'Số lượng',
+    guests: 'Số người',
+    checkinLabel: 'Ngày nhận phòng',
+    checkoutLabel: 'Ngày trả phòng',
+    includes: 'Bao gồm',
+    hotelNoteLabel: 'Ghi chú',
+    noteLabel: 'Ghi chú:',
+    noteLabelEmail: 'Ghi chú đặc biệt:',
+    greetingPrefix: 'Kính gửi',
+    greetingBody: 'Cảm ơn quý khách đã đặt phòng. Dưới đây là thông tin chi tiết về đơn đặt phòng của quý khách.',
+    labelName: 'Tên khách',
+    labelPhone: 'Số điện thoại',
+    labelNationality: 'Quốc tịch',
+    thanks1: 'Cảm ơn quý khách đã sử dụng dịch vụ.',
+    thanks2: 'Chúc quý khách có kỳ nghỉ vui vẻ!',
+    roomDetailsLabel: 'Chi tiết phòng',
+    unitNight: ''
+  },
+  en: {
+    statusPill: 'CONFIRMED',
+    mainTitle: 'BOOKING CONFIRMATION',
+    brand: 'Booking service',
+    codeSummaryPrefix: 'Code: ',
+    codeSummaryDefault: 'Your booking code',
+    bookingCode: 'Booking code',
+    hotelWord: 'Hotel',
+    roomTypeWord: 'Room type',
+    roomLabel: 'Room',
+    quantity: 'Quantity',
+    guests: 'Guests',
+    checkinLabel: 'Check-in',
+    checkoutLabel: 'Check-out',
+    includes: 'Includes',
+    hotelNoteLabel: 'Note',
+    noteLabel: 'Note:',
+    noteLabelEmail: 'Special note:',
+    greetingPrefix: 'Dear',
+    greetingBody: 'Thank you for your booking. Below are the details of your reservation.',
+    labelName: 'Guest name',
+    labelPhone: 'Phone number',
+    labelNationality: 'Nationality',
+    thanks1: 'Thank you for choosing our service.',
+    thanks2: 'Wishing you a wonderful stay!',
+    roomDetailsLabel: 'Room details',
+    unitNight: ''
+  }
+};
+
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('btn-lang-vi').classList.toggle('active', lang === 'vi');
+  document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
+}
+
+function roomTypeBlockHTML(hotelId, roomId, showRemove) {
+  const prefix = hotelId + '-' + roomId;
+  const hideOwnDate = document.getElementById('f-samedate-' + hotelId) && document.getElementById('f-samedate-' + hotelId).checked;
+  return '<div class="roomtype-block" id="roomtype-' + prefix + '">' +
+    '<div class="roomtype-block-header">' +
+      '<span class="roomtype-label">Hạng phòng ' + roomId + '</span>' +
+      (showRemove ? '<button type="button" class="remove-link" onclick="removeRoomTypeBlock(\'' + hotelId + '\', \'' + roomId + '\')">Xoá</button>' : '') +
+    '</div>' +
+    '<label>Hạng phòng</label><input type="text" id="f-roomtype-' + prefix + '" placeholder="VD: Deluxe Double">' +
+    '<div class="row2">' +
+      '<div><label>Số lượng phòng</label><input type="text" id="f-qty-' + prefix + '" placeholder="VD: 1"></div>' +
+      '<div><label>Số người</label><input type="text" id="f-guests-' + prefix + '" placeholder="VD: 2 người lớn"></div>' +
+    '</div>' +
+    '<div class="row2 own-date-row" id="own-date-' + prefix + '" style="' + (hideOwnDate ? 'display:none;' : '') + '">' +
+      '<div><label>Check-in</label><input type="date" id="f-checkin-' + prefix + '"></div>' +
+      '<div><label>Check-out</label><input type="date" id="f-checkout-' + prefix + '"></div>' +
+    '</div>' +
+    '<div class="price-field" id="price-field-' + prefix + '">' +
+      '<label>Giá / đêm (VNĐ, chỉ dùng cho Chi Tiết Thanh Toán)</label><input type="text" id="f-price-' + prefix + '" placeholder="VD: 2400000">' +
+    '</div>' +
+    '<div class="surcharge-section" id="surcharge-section-' + prefix + '"></div>' +
+    '<button type="button" class="add-surcharge-btn" onclick="addSurchargeRow(\'' + prefix + '\')">+ Thêm phụ thu</button>' +
+  '</div>';
+}
+
+function surchargeRowHTML(prefix, idx) {
+  const selId = 'f-surcharge-name-' + prefix + '-' + idx;
+  const priceId = 'f-surcharge-price-' + prefix + '-' + idx;
+  const customId = 'f-surcharge-custom-' + prefix + '-' + idx;
+  let options = '<option value="">-- Chọn --</option>';
+  SURCHARGE_OPTIONS.forEach(function(opt) {
+    const label = opt === 'Khác' ? 'Khác (gõ tay)' : (opt + ' - ' + expandAbbreviation(opt));
+    options += '<option value="' + opt + '">' + label + '</option>';
+  });
+  return '<div class="surcharge-row" id="surcharge-row-' + prefix + '-' + idx + '">' +
+    '<select id="' + selId + '" onchange="toggleSurchargeCustom(\'' + prefix + '\', ' + idx + ')">' + options + '</select>' +
+    '<input type="text" id="' + customId + '" placeholder="Tên phụ thu" style="display:none;">' +
+    '<input type="text" id="' + priceId + '" placeholder="Giá (VNĐ)">' +
+    '<button type="button" class="remove-link" onclick="removeSurchargeRow(\'' + prefix + '\', ' + idx + ')">Xoá</button>' +
+  '</div>';
+}
+
+let surchargeCounters = {};
+
+function addSurchargeRow(prefix) {
+  surchargeCounters[prefix] = (surchargeCounters[prefix] || 0) + 1;
+  const idx = surchargeCounters[prefix];
+  document.getElementById('surcharge-section-' + prefix).insertAdjacentHTML('beforeend', surchargeRowHTML(prefix, idx));
+}
+
+function removeSurchargeRow(prefix, idx) {
+  const el = document.getElementById('surcharge-row-' + prefix + '-' + idx);
+  if (el) el.remove();
+}
+
+function toggleSurchargeCustom(prefix, idx) {
+  const sel = document.getElementById('f-surcharge-name-' + prefix + '-' + idx);
+  const customInput = document.getElementById('f-surcharge-custom-' + prefix + '-' + idx);
+  customInput.style.display = sel.value === 'Khác' ? 'block' : 'none';
+}
+
+function commonAmenitiesHTML(hotelId) {
+  let html = '<div class="amenity-checklist">';
+  COMMON_AMENITIES.forEach(function(item, idx) {
+    html += '<label class="amenity-check-item"><input type="checkbox" id="f-amenity-' + hotelId + '-' + idx + '" value="' + escapeHtmlAttr(item) + '"> ' + item + '</label>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function escapeHtmlAttr(str) {
+  return str.replace(/"/g, '&quot;');
+}
+
+function hotelBlockHTML(hotelId, showRemove) {
+  return '<div class="hotel-block" id="hotel-' + hotelId + '">' +
+    '<div class="hotel-block-header">' +
+      '<span class="hotel-label">Khách sạn ' + hotelId + '</span>' +
+      (showRemove ? '<button type="button" class="remove-link" onclick="removeHotelBlock(' + hotelId + ')">Xoá khách sạn này</button>' : '') +
+    '</div>' +
+    '<label>Tên khách sạn</label>' +
+    '<input type="text" id="f-hotel-' + hotelId + '" placeholder="VD: Mường Thanh Đà Nẵng">' +
+    '<label>Địa chỉ</label>' +
+    '<input type="text" id="f-address-' + hotelId + '" placeholder="VD: 270 Võ Nguyên Giáp, Đà Nẵng">' +
+    '<label>Mã đặt phòng (của khách sạn này, để trống nếu chưa có)</label>' +
+    '<input type="text" id="f-code-' + hotelId + '" placeholder="VD: BK20260622">' +
+    '<label>Bao gồm — chọn nhanh</label>' +
+    commonAmenitiesHTML(hotelId) +
+    '<label style="margin-top:10px;">Bao gồm — dán thêm từ file khách sạn (giữ nguyên, không bắt buộc)</label>' +
+    '<textarea id="f-amenities-' + hotelId + '" rows="3" placeholder="Dán nguyên văn nội dung từ file khách sạn vào đây"></textarea>' +
+    '<label style="margin-top:10px;">Ghi chú riêng cho khách sạn này (không bắt buộc)</label>' +
+    '<input type="text" id="f-hotelnote-' + hotelId + '" placeholder="VD: Khách quen, ưu tiên tầng cao">' +
+    '<div class="same-date-toggle">' +
+      '<label class="checkbox-label"><input type="checkbox" id="f-samedate-' + hotelId + '" checked onchange="toggleSameDate(' + hotelId + ')"> Tất cả các phòng cùng ngày check-in/out</label>' +
+    '</div>' +
+    '<div class="row2 shared-date-row" id="shared-date-' + hotelId + '">' +
+      '<div><label>Check-in (chung)</label><input type="date" id="f-checkin-shared-' + hotelId + '"></div>' +
+      '<div><label>Check-out (chung)</label><input type="date" id="f-checkout-shared-' + hotelId + '"></div>' +
+    '</div>' +
+    '<div id="roomtypes-container-' + hotelId + '"></div>' +
+    '<button type="button" class="add-roomtype" onclick="addRoomTypeBlock(' + hotelId + ')">+ Thêm hạng phòng khác (cùng khách sạn này)</button>' +
+  '</div>';
+}
+
+function addHotelBlock() {
+  hotelCount++;
+  const id = hotelCount;
+  roomTypeCounters[id] = 0;
+  const container = document.getElementById('hotels-container');
+  const showRemove = document.querySelectorAll('#hotels-container .hotel-block').length >= 1;
+  container.insertAdjacentHTML('beforeend', hotelBlockHTML(id, showRemove));
+  addRoomTypeBlock(id);
+}
+
+function removeHotelBlock(hotelId) {
+  const block = document.getElementById('hotel-' + hotelId);
+  if (block) block.remove();
+}
+
+function addRoomTypeBlock(hotelId) {
+  roomTypeCounters[hotelId] = (roomTypeCounters[hotelId] || 0) + 1;
+  const roomId = roomTypeCounters[hotelId];
+  const container = document.getElementById('roomtypes-container-' + hotelId);
+  const existingCount = document.querySelectorAll('#roomtypes-container-' + hotelId + ' .roomtype-block').length;
+  const showRemove = existingCount >= 1;
+  container.insertAdjacentHTML('beforeend', roomTypeBlockHTML(hotelId, roomId, showRemove));
+}
+
+function removeRoomTypeBlock(hotelId, roomId) {
+  const block = document.getElementById('roomtype-' + hotelId + '-' + roomId);
+  if (block) block.remove();
+}
+
+function toggleSameDate(hotelId) {
+  const checked = document.getElementById('f-samedate-' + hotelId).checked;
+  document.getElementById('shared-date-' + hotelId).style.display = checked ? 'grid' : 'none';
+  document.querySelectorAll('#roomtypes-container-' + hotelId + ' .own-date-row').forEach(function(el) {
+    el.style.display = checked ? 'none' : 'grid';
+  });
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+function parseDateVN(s) {
+  if (!s || s === '-') return null;
+  const parts = s.trim().split('/');
+  if (parts.length < 2) return null;
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const year = parts.length > 2 ? parseInt(parts[2], 10) : new Date().getFullYear();
+  const d = new Date(year, month, day);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function nightsBetweenDMY(checkin, checkout) {
+  const d1 = parseDateVN(checkin);
+  const d2 = parseDateVN(checkout);
+  if (!d1 || !d2) return 0;
+  const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 0;
+}
+
+function formatCurrency(n) {
+  if (isNaN(n)) return '0 đ';
+  return Math.round(n).toLocaleString('vi-VN') + ' đ';
+}
+
+function getInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function parseServiceLines(text) {
+  if (!text) return [];
+  return text.split('\n').map(function(line) {
+    const trimmed = line.trim();
+    if (!trimmed) return null;
+    const idx = trimmed.lastIndexOf(':');
+    if (idx === -1) return { name: expandAbbreviation(trimmed), price: 0, qty: 1, total: 0 };
+    const namePart = trimmed.substring(0, idx).trim();
+    const pricePart = trimmed.substring(idx + 1).trim();
+    const price = parseFloat(pricePart.replace(/[^\d.-]/g, '')) || 0;
+    return { name: expandAbbreviation(namePart), price: price, qty: 1, total: price };
+  }).filter(Boolean);
+}
+
+let serviceCounters = { transport: 0, otherservices: 0 };
+
+function serviceRowHTML(group, idx) {
+  const nameId = 'f-service-name-' + group + '-' + idx;
+  const priceId = 'f-service-price-' + group + '-' + idx;
+  const qtyId = 'f-service-qty-' + group + '-' + idx;
+  const routeId = 'f-service-route-' + group + '-' + idx;
+  const checkinId = 'f-service-checkin-' + group + '-' + idx;
+  const checkoutId = 'f-service-checkout-' + group + '-' + idx;
+  const isTransport = group === 'transport';
+  return '<div class="service-row-block" id="service-row-' + group + '-' + idx + '">' +
+    '<div class="service-row">' +
+      '<input type="text" id="' + nameId + '" placeholder="Tên dịch vụ (VD: VMB, Oto)">' +
+      '<input type="text" id="' + priceId + '" placeholder="Giá / đơn vị">' +
+      '<input type="text" id="' + qtyId + '" placeholder="SL" value="1">' +
+      '<button type="button" class="remove-link" onclick="removeServiceRow(\'' + group + '\', ' + idx + ')">Xoá</button>' +
+    '</div>' +
+    (isTransport ?
+      '<div class="row2" style="margin-top:6px;">' +
+        '<div><label>Chặng</label><input type="text" id="' + routeId + '" placeholder="VD: HAN-SGN"></div>' +
+        '<div></div>' +
+      '</div>' +
+      '<div class="row2">' +
+        '<div><label>Ngày đi</label><input type="date" id="' + checkinId + '"></div>' +
+        '<div><label>Ngày về</label><input type="date" id="' + checkoutId + '"></div>' +
+      '</div>'
+      : '') +
+  '</div>';
+}
+
+function addServiceRow(group) {
+  serviceCounters[group] = (serviceCounters[group] || 0) + 1;
+  const idx = serviceCounters[group];
+  document.getElementById(group + '-section').insertAdjacentHTML('beforeend', serviceRowHTML(group, idx));
+}
+
+function removeServiceRow(group, idx) {
+  const el = document.getElementById('service-row-' + group + '-' + idx);
+  if (el) el.remove();
+}
+
+function collectServiceList(group) {
+  const items = [];
+  document.querySelectorAll('#' + group + '-section .service-row-block').forEach(function(row) {
+    const idx = row.id.replace('service-row-' + group + '-', '');
+    const nameEl = document.getElementById('f-service-name-' + group + '-' + idx);
+    if (!nameEl) return;
+    const name = nameEl.value.trim();
+    if (!name) return;
+    const price = parseFloat(document.getElementById('f-service-price-' + group + '-' + idx).value.replace(/[^\d.-]/g, '')) || 0;
+    const qty = parseFloat(document.getElementById('f-service-qty-' + group + '-' + idx).value.replace(/[^\d.-]/g, '')) || 1;
+    const item = { name: expandAbbreviation(name), price: price, qty: qty, total: price * qty };
+    if (group === 'transport') {
+      const routeEl = document.getElementById('f-service-route-' + group + '-' + idx);
+      const checkinEl = document.getElementById('f-service-checkin-' + group + '-' + idx);
+      const checkoutEl = document.getElementById('f-service-checkout-' + group + '-' + idx);
+      item.route = routeEl ? routeEl.value.trim() : '';
+      item.checkin = checkinEl ? formatDate(checkinEl.value) : '-';
+      item.checkout = checkoutEl ? formatDate(checkoutEl.value) : '-';
+    }
+    items.push(item);
+  });
+  return items;
+}
+
+function fillServiceList(group, items) {
+  document.getElementById(group + '-section').innerHTML = '';
+  serviceCounters[group] = 0;
+  (items || []).forEach(function(item) {
+    addServiceRow(group);
+    const idx = serviceCounters[group];
+    document.getElementById('f-service-name-' + group + '-' + idx).value = item.name || '';
+    document.getElementById('f-service-price-' + group + '-' + idx).value = item.price ? String(item.price) : '';
+    document.getElementById('f-service-qty-' + group + '-' + idx).value = item.qty ? String(item.qty) : '1';
+    if (group === 'transport') {
+      const routeEl = document.getElementById('f-service-route-' + group + '-' + idx);
+      const checkinEl = document.getElementById('f-service-checkin-' + group + '-' + idx);
+      const checkoutEl = document.getElementById('f-service-checkout-' + group + '-' + idx);
+      if (routeEl) routeEl.value = item.route || '';
+      if (checkinEl) checkinEl.value = csvDateToInputDate(item.checkin);
+      if (checkoutEl) checkoutEl.value = csvDateToInputDate(item.checkout);
+    }
+  });
+}
+
+function collectData() {
+  const name = document.getElementById('f-name').value.trim() || '-';
+  const phone = document.getElementById('f-phone').value.trim() || '-';
+  const note = document.getElementById('f-note').value.trim();
+
+  const hotels = [];
+  document.querySelectorAll('#hotels-container .hotel-block').forEach(function(hBlock) {
+    const hotelId = hBlock.id.replace('hotel-', '');
+    const hotelName = document.getElementById('f-hotel-' + hotelId).value.trim() || '-';
+    const address = document.getElementById('f-address-' + hotelId).value.trim();
+    const bookingCode = document.getElementById('f-code-' + hotelId).value.trim();
+    const checkedAmenities = [];
+    COMMON_AMENITIES.forEach(function(item, idx) {
+      const cb = document.getElementById('f-amenity-' + hotelId + '-' + idx);
+      if (cb && cb.checked) checkedAmenities.push(item);
+    });
+    const customAmenitiesText = document.getElementById('f-amenities-' + hotelId).value.replace(/\s+$/, '');
+    const hotelNote = document.getElementById('f-hotelnote-' + hotelId).value.trim();
+    const useSameDate = document.getElementById('f-samedate-' + hotelId).checked;
+    const sharedCheckin = formatDate(document.getElementById('f-checkin-shared-' + hotelId).value);
+    const sharedCheckout = formatDate(document.getElementById('f-checkout-shared-' + hotelId).value);
+
+    const rooms = [];
+    hBlock.querySelectorAll('.roomtype-block').forEach(function(rBlock) {
+      const suffix = rBlock.id.replace('roomtype-', '');
+      const checkin = useSameDate ? sharedCheckin : formatDate(document.getElementById('f-checkin-' + suffix).value);
+      const checkout = useSameDate ? sharedCheckout : formatDate(document.getElementById('f-checkout-' + suffix).value);
+      const priceInput = document.getElementById('f-price-' + suffix);
+      const pricePerNight = priceInput ? (parseFloat(priceInput.value.replace(/[^\d.-]/g, '')) || 0) : 0;
+      const qtyRaw = document.getElementById('f-qty-' + suffix).value.trim();
+      const qtyNum = parseFloat(qtyRaw.replace(/[^\d.-]/g, '')) || 1;
+      const nights = nightsBetweenDMY(checkin, checkout) || 1;
+
+      const surcharges = [];
+      const surchargeSection = document.getElementById('surcharge-section-' + suffix);
+      if (surchargeSection) {
+        surchargeSection.querySelectorAll('.surcharge-row').forEach(function(row) {
+          const rowId = row.id;
+          const sel = document.getElementById(rowId.replace('surcharge-row-', 'f-surcharge-name-'));
+          const customInput = document.getElementById(rowId.replace('surcharge-row-', 'f-surcharge-custom-'));
+          const priceInput2 = document.getElementById(rowId.replace('surcharge-row-', 'f-surcharge-price-'));
+          if (!sel) return;
+          const rawName = sel.value === 'Khác' ? (customInput ? customInput.value.trim() : '') : sel.value;
+          const name = expandAbbreviation(rawName);
+          const price = priceInput2 ? (parseFloat(priceInput2.value.replace(/[^\d.-]/g, '')) || 0) : 0;
+          if (name) surcharges.push({ name: name, price: price });
+        });
+      }
+      const surchargeTotal = surcharges.reduce(function(s, x) { return s + x.price; }, 0);
+
+      rooms.push({
+        roomtype: document.getElementById('f-roomtype-' + suffix).value.trim() || '-',
+        qty: qtyRaw || '-',
+        guests: document.getElementById('f-guests-' + suffix).value.trim() || '-',
+        checkin: checkin,
+        checkout: checkout,
+        nights: nights,
+        pricePerNight: pricePerNight,
+        surcharges: surcharges,
+        roomTotal: (pricePerNight * nights * qtyNum) + (surchargeTotal * nights)
+      });
+    });
+
+    const hotelObj = { hotelName: hotelName, address: address, bookingCode: bookingCode, checkedAmenities: checkedAmenities, customAmenitiesText: customAmenitiesText, hotelNote: hotelNote, rooms: rooms };
+    hotelObj.subtotal = rooms.reduce(function(sum, r) { return sum + r.roomTotal; }, 0);
+    hotels.push(hotelObj);
+  });
+
+  const transport = collectServiceList('transport');
+  const otherServices = collectServiceList('otherservices');
+
+  return { name: name, phone: phone, nationality: '', note: note, hotels: hotels, transport: transport, otherServices: otherServices };
+}
+
+function applyStaticLabels(t) {
+  document.getElementById('t-status-pill').textContent = t.statusPill;
+  document.getElementById('t-status-pill-2').textContent = t.statusPill;
+  document.getElementById('t-main-title').textContent = t.mainTitle;
+  document.getElementById('t-main-title-2').textContent = t.mainTitle;
+  document.getElementById('t-note-label-app').textContent = t.noteLabel;
+  document.getElementById('t-note-label-email').textContent = t.noteLabelEmail;
+  document.getElementById('t-footer-app').innerHTML = t.thanks1 + '<br>' + t.thanks2;
+  document.getElementById('t-greeting-prefix').textContent = t.greetingPrefix;
+  document.getElementById('t-greeting-body').textContent = t.greetingBody;
+  document.getElementById('t-label-name').textContent = t.labelName;
+  document.getElementById('t-label-phone').textContent = t.labelPhone;
+  document.getElementById('t-label-nationality').textContent = t.labelNationality;
+  document.getElementById('t-thanks-1').textContent = t.thanks1;
+  document.getElementById('t-thanks-2').textContent = t.thanks2;
+}
+
+function roomsShareSameDate(rooms) {
+  if (!rooms.length) return false;
+  const ci = rooms[0].checkin;
+  const co = rooms[0].checkout;
+  return rooms.every(function(r) { return r.checkin === ci && r.checkout === co; });
+}
+
+function renderPaymentApp(data, compact) {
+  const transportTotal = (data.transport || []).reduce(function(s, x) { return s + x.total; }, 0);
+  const otherTotal = (data.otherServices || []).reduce(function(s, x) { return s + x.total; }, 0);
+  const grandTotal = data.hotels.reduce(function(sum, h) { return sum + (h.subtotal || 0); }, 0) + transportTotal + otherTotal;
+  const body = document.getElementById('pay-app-body');
+  body.innerHTML = '';
+  const multiHotel = data.hotels.length > 1;
+
+  let html = '';
+  data.hotels.forEach(function(hotel, hIndex) {
+    html += '<div class="pay-app-hotel-name">' + (multiHotel ? ('Khách sạn ' + (hIndex+1) + ': ') : '') + escapeHtml(hotel.hotelName) + '</div>';
+
+    if (!compact) {
+      const multiRoom = hotel.rooms.length > 1;
+      const sameDate = roomsShareSameDate(hotel.rooms);
+
+      if (sameDate) {
+        html += '<div class="pay-app-shared-date">';
+        html += '<div class="pay-app-row"><span class="plbl">Ngày nhận phòng</span><span class="pval">' + hotel.rooms[0].checkin + '</span></div>';
+        html += '<div class="pay-app-row"><span class="plbl">Ngày trả phòng</span><span class="pval">' + hotel.rooms[0].checkout + '</span></div>';
+        html += '</div>';
+      }
+
+      hotel.rooms.forEach(function(room, rIndex) {
+        html += '<div class="pay-app-room-box">';
+        if (multiRoom) html += '<div class="pay-app-room-tag">Phòng ' + (rIndex+1) + '</div>';
+        html += '<div class="pay-app-row"><span class="plbl">Hạng phòng</span><span class="pval">' + escapeHtml(room.roomtype) + '</span></div>';
+        html += '<div class="pay-app-row"><span class="plbl">Số lượng</span><span class="pval">' + escapeHtml(room.qty) + '</span></div>';
+        html += '<div class="pay-app-row"><span class="plbl">Số người</span><span class="pval">' + escapeHtml(room.guests) + '</span></div>';
+        if (!sameDate) {
+          html += '<div class="pay-app-row"><span class="plbl">Ngày nhận phòng</span><span class="pval">' + room.checkin + '</span></div>';
+          html += '<div class="pay-app-row"><span class="plbl">Ngày trả phòng</span><span class="pval">' + room.checkout + '</span></div>';
+        }
+        html += '<div class="pay-app-row"><span class="plbl">Số đêm</span><span class="pval">' + room.nights + ' đêm</span></div>';
+        html += '<div class="pay-app-row"><span class="plbl">Giá / đêm</span><span class="pval">' + formatCurrency(room.pricePerNight) + '</span></div>';
+        (room.surcharges || []).forEach(function(sc) {
+          html += '<div class="pay-app-row"><span class="plbl">+ ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + '</span></div>';
+        });
+        html += '</div>';
+      });
+    } else {
+      const totalNights = hotel.rooms.reduce(function(s, r) { return s + r.nights; }, 0);
+      html += '<div class="pay-app-row"><span class="plbl">Số phòng</span><span class="pval">' + hotel.rooms.length + ' phòng</span></div>';
+      html += '<div class="pay-app-row"><span class="plbl">Tổng số đêm</span><span class="pval">' + totalNights + ' đêm</span></div>';
+      hotel.rooms.forEach(function(room) {
+        (room.surcharges || []).forEach(function(sc) {
+          html += '<div class="pay-app-row"><span class="plbl">+ ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + '</span></div>';
+        });
+      });
+    }
+
+    html += '<div class="pay-app-hotel-subtotal"><span class="sub-lbl">Tổng tiền khách sạn</span><span class="sub-val">' + formatCurrency(hotel.subtotal || 0) + '</span></div>';
+  });
+
+  if ((data.transport || []).length) {
+    html += '<div class="pay-app-hotel-name">Dịch vụ di chuyển</div>';
+    html += compact ? simpleServiceLinesHTML(data.transport, 'pay-app-row', 'plbl', 'pval') : transportItemsHTML(data.transport, true);
+  }
+  if ((data.otherServices || []).length) {
+    html += '<div class="pay-app-hotel-name">Dịch vụ khác</div>';
+    html += compact ? simpleServiceLinesHTML(data.otherServices, 'pay-app-row', 'plbl', 'pval') : otherServiceItemsHTML(data.otherServices, true);
+  }
+
+  html += '<div class="pay-app-grand-total"><span class="gt-label">Tổng cộng</span><span class="gt-value">' + formatCurrency(grandTotal) + '</span></div>';
+
+  body.innerHTML = html;
+}
+
+function renderPaymentEmail(data, compact) {
+  const transportTotal = (data.transport || []).reduce(function(s, x) { return s + x.total; }, 0);
+  const otherTotal = (data.otherServices || []).reduce(function(s, x) { return s + x.total; }, 0);
+  const grandTotal = data.hotels.reduce(function(sum, h) { return sum + (h.subtotal || 0); }, 0) + transportTotal + otherTotal;
+  const body = document.getElementById('pay-email-body');
+  body.innerHTML = '';
+  const multiHotel = data.hotels.length > 1;
+
+  let html = '';
+  data.hotels.forEach(function(hotel, hIndex) {
+    html += '<p class="pay-email-hotel-name">' + (multiHotel ? ('Khách sạn ' + (hIndex+1) + ': ') : '') + escapeHtml(hotel.hotelName) + '</p>';
+
+    if (!compact) {
+      const multiRoom = hotel.rooms.length > 1;
+      const sameDate = roomsShareSameDate(hotel.rooms);
+
+      if (sameDate) {
+        html += '<div class="pay-email-shared-dates">';
+        html += '<div><div class="d-label">Ngày nhận phòng</div><div class="d-value">' + hotel.rooms[0].checkin + '</div></div>';
+        html += '<div><div class="d-label">Ngày trả phòng</div><div class="d-value">' + hotel.rooms[0].checkout + '</div></div>';
+        html += '</div>';
+      }
+
+      hotel.rooms.forEach(function(room, rIndex) {
+        const isFirst = rIndex === 0;
+        html += isFirst ? '' : '<div class="pay-email-room-entry">';
+        if (multiRoom) html += '<div class="pay-email-room-tag">Phòng ' + (rIndex+1) + '</div>';
+        html += '<div class="pay-email-detail-grid">';
+        html += '<div><div class="d-label">Hạng phòng</div><div class="d-value">' + escapeHtml(room.roomtype) + '</div></div>';
+        html += '<div><div class="d-label">Số lượng</div><div class="d-value">' + escapeHtml(room.qty) + '</div></div>';
+        html += '<div><div class="d-label">Số người</div><div class="d-value">' + escapeHtml(room.guests) + '</div></div>';
+        html += '</div>';
+        if (!sameDate) {
+          html += '<div class="pay-email-detail-grid dates">';
+          html += '<div><div class="d-label">Ngày nhận phòng</div><div class="d-value">' + room.checkin + '</div></div>';
+          html += '<div><div class="d-label">Ngày trả phòng</div><div class="d-value">' + room.checkout + '</div></div>';
+          html += '</div>';
+        }
+        html += '<div class="pay-email-detail-grid dates">';
+        html += '<div><div class="d-label">Số đêm</div><div class="d-value">' + room.nights + ' đêm</div></div>';
+        html += '<div><div class="d-label">Giá / đêm</div><div class="d-value">' + formatCurrency(room.pricePerNight) + '</div></div>';
+        html += '</div>';
+        if ((room.surcharges || []).length) {
+          html += '<table class="pay-email-table" style="margin-top:8px;">';
+          room.surcharges.forEach(function(sc) {
+            html += '<tr><td class="plbl">+ ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + '</td></tr>';
+          });
+          html += '</table>';
+        }
+        html += isFirst ? '' : '</div>';
+      });
+    } else {
+      const totalNights = hotel.rooms.reduce(function(s, r) { return s + r.nights; }, 0);
+      html += '<table class="pay-email-table">';
+      html += '<tr><td class="plbl">Số phòng</td><td class="pval">' + hotel.rooms.length + ' phòng</td></tr>';
+      html += '<tr><td class="plbl">Tổng số đêm</td><td class="pval">' + totalNights + ' đêm</td></tr>';
+      hotel.rooms.forEach(function(room) {
+        (room.surcharges || []).forEach(function(sc) {
+          html += '<tr><td class="plbl">+ ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + '</td></tr>';
+        });
+      });
+      html += '</table>';
+    }
+
+    html += '<div class="pay-email-subtotal"><span class="sub-lbl">Tổng tiền khách sạn</span><span class="sub-val">' + formatCurrency(hotel.subtotal || 0) + '</span></div>';
+  });
+
+  if ((data.transport || []).length) {
+    html += '<p class="pay-email-hotel-name">Dịch vụ di chuyển</p>';
+    html += compact ? ('<table class="pay-email-table">' + simpleServiceLinesTableHTML(data.transport) + '</table>') : transportItemsHTML(data.transport, true);
+  }
+  if ((data.otherServices || []).length) {
+    html += '<p class="pay-email-hotel-name">Dịch vụ khác</p>';
+    html += compact ? ('<table class="pay-email-table">' + simpleServiceLinesTableHTML(data.otherServices) + '</table>') : otherServiceItemsHTML(data.otherServices, true);
+  }
+
+  body.innerHTML = html;
+
+  // Grand total appended after the body inside the same section
+  let existingGrand = document.getElementById('pay-email-grand-total-wrap');
+  if (existingGrand) existingGrand.remove();
+  const grandWrap = document.createElement('div');
+  grandWrap.id = 'pay-email-grand-total-wrap';
+  grandWrap.className = 'pay-email-grand-total';
+  grandWrap.innerHTML = '<span class="gt-label">Tổng cộng</span><span class="gt-value">' + formatCurrency(grandTotal) + '</span>';
+  document.getElementById('pay-email-section').appendChild(grandWrap);
+}
+
+function renderApp(data, t) {
+  document.getElementById('app-guest-name').textContent = data.name;
+  document.getElementById('app-guest-name-greet').textContent = data.name;
+  document.getElementById('app-guest-phone').textContent = data.phone;
+  document.getElementById('app-avatar').textContent = getInitials(data.name);
+  document.getElementById('app-greeting-prefix').textContent = t.greetingPrefix;
+  document.getElementById('app-greeting-body').textContent = t.greetingBody;
+
+  const natEl = document.getElementById('app-guest-nationality');
+  if (data.nationality) {
+    natEl.textContent = data.nationality;
+    natEl.style.display = 'block';
+  } else {
+    natEl.style.display = 'none';
+  }
+
+  const firstCode = data.hotels.length && data.hotels[0].bookingCode ? data.hotels[0].bookingCode : null;
+  const codeSummaryEl = document.getElementById('app-code-summary');
+  if (firstCode) {
+    codeSummaryEl.textContent = t.codeSummaryPrefix + firstCode;
+    codeSummaryEl.style.display = 'block';
+  } else {
+    codeSummaryEl.style.display = 'none';
+  }
+
+  const container = document.getElementById('app-hotels-container');
+  container.innerHTML = '';
+  const multiHotel = data.hotels.length > 1;
+
+  data.hotels.forEach(function(hotel, hIndex) {
+    let html = '<div class="hotel-card">';
+    html += '<div class="hotel-name-row"><span class="hotel-name">' + (multiHotel ? (t.hotelWord + ' ' + (hIndex+1) + ': ') : '') + escapeHtml(hotel.hotelName) + '</span></div>';
+    if (hotel.address) {
+      html += '<div class="hotel-address">' + escapeHtml(hotel.address) + '</div>';
+    }
+    if (hotel.bookingCode) {
+      html += '<div class="code-strip"><span class="code-label">' + t.bookingCode + '</span><span class="code-value">' + escapeHtml(hotel.bookingCode) + '</span></div>';
+    }
+
+    html += '<div class="section-label">' + t.roomDetailsLabel + '</div>';
+    const multiRoom = hotel.rooms.length > 1;
+    const sameDate = roomsShareSameDate(hotel.rooms);
+
+    if (sameDate) {
+      html += '<div class="shared-date-box">';
+      html += '<div class="room-detail-row"><span class="rlbl">' + t.checkinLabel + '</span><span class="rval">' + hotel.rooms[0].checkin + '</span></div>';
+      html += '<div class="room-detail-row"><span class="rlbl">' + t.checkoutLabel + '</span><span class="rval">' + hotel.rooms[0].checkout + '</span></div>';
+      html += '</div>';
+    }
+
+    hotel.rooms.forEach(function(room, rIndex) {
+      html += '<div class="room-info-box">';
+      if (multiRoom) html += '<div class="room-tag">' + t.roomLabel + ' ' + (rIndex+1) + '</div>';
+      html += '<div class="room-detail-row"><span class="rlbl">' + t.roomTypeWord + '</span><span class="rval">' + escapeHtml(room.roomtype) + '</span></div>';
+      html += '<div class="room-detail-row"><span class="rlbl">' + t.quantity + '</span><span class="rval">' + escapeHtml(room.qty) + '</span></div>';
+      html += '<div class="room-detail-row"><span class="rlbl">' + t.guests + '</span><span class="rval">' + escapeHtml(room.guests) + '</span></div>';
+      if (!sameDate) {
+        html += '<div class="room-detail-row"><span class="rlbl">' + t.checkinLabel + '</span><span class="rval">' + room.checkin + '</span></div>';
+        html += '<div class="room-detail-row"><span class="rlbl">' + t.checkoutLabel + '</span><span class="rval">' + room.checkout + '</span></div>';
+      }
+      html += '</div>';
+    });
+
+    if (hotel.checkedAmenities.length || hotel.customAmenitiesText) {
+      html += '<div class="amenities-app"><div class="am-title">' + t.includes + '</div>';
+      if (hotel.checkedAmenities.length) {
+        html += '<ul>';
+        hotel.checkedAmenities.forEach(function(a) { html += '<li>' + escapeHtml(a) + '</li>'; });
+        html += '</ul>';
+      }
+      if (hotel.customAmenitiesText) {
+        html += '<div class="amenities-custom-text">' + escapeHtml(hotel.customAmenitiesText).replace(/\n/g, '<br>') + '</div>';
+      }
+      html += '</div>';
+    }
+
+    if (hotel.hotelNote) {
+      html += '<div class="hotel-note-strip"><b>' + t.hotelNoteLabel + ':</b> ' + escapeHtml(hotel.hotelNote) + '</div>';
+    }
+
+    html += '</div>';
+    container.insertAdjacentHTML('beforeend', html);
+  });
+
+  if (data.note) {
+    document.getElementById('app-note').textContent = data.note;
+    document.getElementById('app-notebox').style.display = 'block';
+  } else {
+    document.getElementById('app-notebox').style.display = 'none';
+  }
+
+  renderTransportItems('app-transport-list', 'app-transport-block', data.transport, false);
+  renderOtherServiceItems('app-otherservices-list', 'app-otherservices-block', data.otherServices, false);
+}
+
+function simpleServiceLinesHTML(items, rowClass, lblClass, valClass) {
+  let html = '';
+  items.forEach(function(item) {
+    const qtyLabel = item.qty > 1 ? ' (x' + item.qty + ')' : '';
+    html += '<div class="' + rowClass + '"><span class="' + lblClass + '">' + escapeHtml(item.name) + qtyLabel + '</span><span class="' + valClass + '">' + formatCurrency(item.total) + '</span></div>';
+  });
+  return html;
+}
+
+function simpleServiceLinesTableHTML(items) {
+  let html = '';
+  items.forEach(function(item) {
+    const qtyLabel = item.qty > 1 ? ' (x' + item.qty + ')' : '';
+    html += '<tr><td class="plbl">' + escapeHtml(item.name) + qtyLabel + '</td><td class="pval">' + formatCurrency(item.total) + '</td></tr>';
+  });
+  return html;
+}
+
+function transportItemsHTML(items, showPrice) {
+  let html = '';
+  items.forEach(function(item) {
+    html += '<div class="transport-item-box">';
+    html += '<div class="transport-item-name">' + escapeHtml(item.name) + '</div>';
+    html += '<div class="transport-item-grid">';
+    html += '<div><span class="ti-label">Chặng</span><span class="ti-value">' + (item.route ? escapeHtml(item.route) : '-') + '</span></div>';
+    html += '<div><span class="ti-label">Số lượng</span><span class="ti-value">' + item.qty + '</span></div>';
+    html += '</div>';
+    html += '<div class="transport-item-grid">';
+    html += '<div><span class="ti-label">Ngày đi</span><span class="ti-value">' + (item.checkin || '-') + '</span></div>';
+    html += '<div><span class="ti-label">Ngày về</span><span class="ti-value">' + (item.checkout || '-') + '</span></div>';
+    html += '</div>';
+    if (showPrice) {
+      html += '<div class="transport-item-price"><span class="ti-label">Thành tiền</span><span class="ti-value-price">' + formatCurrency(item.total) + '</span></div>';
+    }
+    html += '</div>';
+  });
+  return html;
+}
+
+function otherServiceItemsHTML(items, showPrice) {
+  let html = '';
+  items.forEach(function(item) {
+    html += '<div class="transport-item-box">';
+    html += '<div class="transport-item-name">' + escapeHtml(item.name) + '</div>';
+    html += '<div class="transport-item-grid">';
+    html += '<div><span class="ti-label">Số lượng</span><span class="ti-value">' + item.qty + '</span></div>';
+    html += '</div>';
+    if (showPrice) {
+      html += '<div class="transport-item-price"><span class="ti-label">Thành tiền</span><span class="ti-value-price">' + formatCurrency(item.total) + '</span></div>';
+    }
+    html += '</div>';
+  });
+  return html;
+}
+
+function renderTransportItems(listId, blockId, items, showPrice) {
+  const block = document.getElementById(blockId);
+  const list = document.getElementById(listId);
+  if (!items || !items.length) {
+    block.style.display = 'none';
+    return;
+  }
+  list.innerHTML = transportItemsHTML(items, showPrice);
+  block.style.display = 'block';
+}
+
+function renderOtherServiceItems(listId, blockId, items, showPrice) {
+  const block = document.getElementById(blockId);
+  const list = document.getElementById(listId);
+  if (!items || !items.length) {
+    block.style.display = 'none';
+    return;
+  }
+  list.innerHTML = otherServiceItemsHTML(items, showPrice);
+  block.style.display = 'block';
+}
+
+function renderEmail(data, t) {
+  document.getElementById('email-guest-name').textContent = data.name;
+  document.getElementById('email-guest-name-2').textContent = data.name;
+  document.getElementById('email-guest-phone').textContent = data.phone;
+
+  const natRow = document.getElementById('email-nationality-row');
+  if (data.nationality) {
+    document.getElementById('email-guest-nationality').textContent = data.nationality;
+    natRow.style.display = 'table-row';
+  } else {
+    natRow.style.display = 'none';
+  }
+
+  const container = document.getElementById('email-hotels-container');
+  container.innerHTML = '';
+  const multiHotel = data.hotels.length > 1;
+
+  data.hotels.forEach(function(hotel, hIndex) {
+    let html = '<div class="hotel-section">';
+    html += '<p class="hotel-eyebrow">' + (multiHotel ? (t.hotelWord + ' ' + (hIndex+1)) : t.hotelWord) + '</p>';
+    html += '<p class="hotel-title">' + escapeHtml(hotel.hotelName) + '</p>';
+    if (hotel.address) {
+      html += '<p class="hotel-address-line">' + escapeHtml(hotel.address) + '</p>';
+    }
+    if (hotel.bookingCode) {
+      html += '<div class="detail-grid"><div class="detail-item full"><div class="d-label">' + t.bookingCode + '</div><div class="d-value">' + escapeHtml(hotel.bookingCode) + '</div></div></div>';
+    }
+
+    html += '<div class="room-section-label">' + t.roomDetailsLabel + '</div>';
+    const multiRoom = hotel.rooms.length > 1;
+    const sameDate = roomsShareSameDate(hotel.rooms);
+
+    if (sameDate) {
+      html += '<div class="detail-grid dates-grid shared-dates-grid">';
+      html += '<div class="detail-item"><div class="d-label">' + t.checkinLabel + '</div><div class="d-value">' + hotel.rooms[0].checkin + '</div></div>';
+      html += '<div class="detail-item"><div class="d-label">' + t.checkoutLabel + '</div><div class="d-value">' + hotel.rooms[0].checkout + '</div></div>';
+      html += '</div>';
+    }
+
+    hotel.rooms.forEach(function(room, rIndex) {
+      const isFirst = rIndex === 0;
+      html += isFirst ? '' : '<div class="room-entry">';
+      if (multiRoom) html += '<div class="room-entry-tag">' + t.roomLabel + ' ' + (rIndex+1) + '</div>';
+      html += '<div class="detail-grid">';
+      html += '<div class="detail-item"><div class="d-label">' + t.roomTypeWord + '</div><div class="d-value">' + escapeHtml(room.roomtype) + '</div></div>';
+      html += '<div class="detail-item"><div class="d-label">' + t.quantity + '</div><div class="d-value">' + escapeHtml(room.qty) + '</div></div>';
+      html += '<div class="detail-item"><div class="d-label">' + t.guests + '</div><div class="d-value">' + escapeHtml(room.guests) + '</div></div>';
+      html += '</div>';
+      if (!sameDate) {
+        html += '<div class="detail-grid dates-grid">';
+        html += '<div class="detail-item"><div class="d-label">' + t.checkinLabel + '</div><div class="d-value">' + room.checkin + '</div></div>';
+        html += '<div class="detail-item"><div class="d-label">' + t.checkoutLabel + '</div><div class="d-value">' + room.checkout + '</div></div>';
+        html += '</div>';
+      }
+      html += isFirst ? '' : '</div>';
+    });
+
+    if (hotel.checkedAmenities.length || hotel.customAmenitiesText) {
+      html += '<div class="amenities-email"><div class="ae-title">' + t.includes + '</div>';
+      if (hotel.checkedAmenities.length) {
+        html += '<ul>';
+        hotel.checkedAmenities.forEach(function(a) { html += '<li>' + escapeHtml(a) + '</li>'; });
+        html += '</ul>';
+      }
+      if (hotel.customAmenitiesText) {
+        html += '<div class="amenities-custom-text">' + escapeHtml(hotel.customAmenitiesText).replace(/\n/g, '<br>') + '</div>';
+      }
+      html += '</div>';
+    }
+
+    if (hotel.hotelNote) {
+      html += '<div class="hotel-note-strip-email"><b>' + t.hotelNoteLabel + ':</b> ' + escapeHtml(hotel.hotelNote) + '</div>';
+    }
+
+    html += '</div>';
+    container.insertAdjacentHTML('beforeend', html);
+  });
+
+  if (data.note) {
+    document.getElementById('email-note').textContent = data.note;
+    document.getElementById('email-notebox').style.display = 'block';
+  } else {
+    document.getElementById('email-notebox').style.display = 'none';
+  }
+
+  renderTransportItems('email-transport-list', 'email-transport-block', data.transport, false);
+  renderOtherServiceItems('email-otherservices-list', 'email-otherservices-block', data.otherServices, false);
+}
+
+function updateOutputToggle() {
+  const confirmChecked = document.getElementById('toggle-confirm').checked;
+  const paymentChecked = document.getElementById('toggle-payment').checked;
+  document.getElementById('toggle-confirm-label').classList.toggle('active', confirmChecked);
+  document.getElementById('toggle-payment-label').classList.toggle('active', paymentChecked);
+
+  // Show/hide price fields in the form based on payment toggle
+  document.querySelectorAll('.price-field').forEach(function(el) {
+    el.style.display = paymentChecked ? 'block' : 'none';
+  });
+}
+
+function renderTicketFromData(data) {
+  const t = I18N[currentLang];
+  const showConfirm = document.getElementById('toggle-confirm').checked;
+  const showPayment = document.getElementById('toggle-payment').checked;
+  const compactPayment = showConfirm && showPayment;
+  const paymentStandalone = !showConfirm && showPayment;
+
+  applyStaticLabels(t);
+
+  document.getElementById('confirm-app-card').style.display = showConfirm ? 'block' : 'none';
+  document.getElementById('confirm-email-block').style.display = showConfirm ? 'block' : 'none';
+  document.getElementById('pay-app-card').style.display = showPayment ? 'block' : 'none';
+  document.getElementById('pay-email-section').style.display = showPayment ? 'block' : 'none';
+
+  document.getElementById('pay-app-card').classList.toggle('standalone', paymentStandalone);
+  document.getElementById('pay-email-section').classList.toggle('standalone', paymentStandalone);
+  document.getElementById('pay-email-topbar').style.display = paymentStandalone ? 'block' : 'none';
+
+  if (showConfirm) {
+    renderApp(data, t);
+    renderEmail(data, t);
+  }
+  if (showPayment) {
+    renderPaymentApp(data, compactPayment);
+    renderPaymentEmail(data, compactPayment);
+  }
+
+  document.getElementById('output-type-section').style.display = 'none';
+  document.getElementById('sheet-load-section').style.display = 'none';
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('result-section').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function generateTicket() {
+  const data = collectData();
+  renderTicketFromData(data);
+}
+
+function backToForm() {
+  document.getElementById('output-type-section').style.display = 'block';
+  document.getElementById('sheet-load-section').style.display = 'block';
+  document.getElementById('form-section').style.display = 'block';
+  document.getElementById('result-section').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+function newTicket() {
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-phone').value = '';
+  document.getElementById('f-note').value = '';
+  document.getElementById('hotels-container').innerHTML = '';
+  document.getElementById('transport-section').innerHTML = '';
+  document.getElementById('otherservices-section').innerHTML = '';
+  hotelCount = 0;
+  roomTypeCounters = {};
+  serviceCounters = { transport: 0, otherservices: 0 };
+  setLang('vi');
+  addHotelBlock();
+  backToForm();
+}
+
+function setSheetStatus(msg, type) {
+  const el = document.getElementById('sheet-status');
+  el.textContent = msg;
+  el.className = 'sheet-status' + (type ? ' ' + type : '');
+}
+
+function loadFromSheet() {
+  const url = document.getElementById('f-sheet-url').value.trim();
+  const code = document.getElementById('f-sheet-code').value.trim();
+
+  if (!url) { setSheetStatus('Vui lòng dán link Google Sheet (CSV).', 'err'); return; }
+  if (!code) { setSheetStatus('Vui lòng nhập mã nhóm booking.', 'err'); return; }
+  if (typeof Papa === 'undefined') { setSheetStatus('Không tải được thư viện đọc CSV. Kiểm tra kết nối mạng.', 'err'); return; }
+
+  setSheetStatus('Đang tải dữ liệu...', 'loading');
+
+  Papa.parse(url, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      try {
+        const normalizedCode = code.toLowerCase().replace(/\s+/g, ' ').trim();
+        const allRows = results.data || [];
+        const rows = allRows.filter(function(r) {
+          const cellVal = (r['Mã Booking'] || '').toLowerCase().replace(/\s+/g, ' ').trim();
+          return cellVal === normalizedCode;
+        });
+
+        if (!rows.length) {
+          const cols = allRows.length ? Object.keys(allRows[0]) : [];
+          const sampleCode = allRows.length ? (allRows[0]['Mã Booking'] || '(không có giá trị)') : '(không có dòng nào)';
+          setSheetStatus(
+            'Không tìm thấy mã "' + code + '". ' +
+            'Cột đọc được: [' + cols.join(', ') + ']. ' +
+            'Giá trị mẫu ở dòng 1, cột "Mã Booking": "' + sampleCode + '"',
+            'err'
+          );
+          console.log('PapaParse columns:', cols);
+          console.log('PapaParse first row:', allRows[0]);
+          console.log('PapaParse errors:', results.errors);
+          return;
+        }
+
+        const data = buildDataFromRows(rows);
+        console.log('Matched rows:', rows);
+        console.log('Built data (transport/otherServices):', data.transport, data.otherServices);
+        fillFormFromData(data);
+
+        let debugMsg = 'Đã điền dữ liệu vào form cho mã "' + code + '".';
+        if (data.transport.length || data.otherServices.length) {
+          debugMsg += ' [Di chuyển: ' + JSON.stringify(data.transport) + '] [Khác: ' + JSON.stringify(data.otherServices) + ']';
+        } else {
+          const cols = rows.length ? Object.keys(rows[0]) : [];
+          debugMsg += ' Không thấy dòng Di chuyển/Khác nào khớp. Cột đọc được: [' + cols.join(', ') + ']';
+        }
+        setSheetStatus(debugMsg, 'ok');
+        window.scrollTo(0, document.getElementById('form-section').offsetTop - 20);
+      } catch (e) {
+        setSheetStatus('Lỗi khi xử lý dữ liệu: ' + e.message, 'err');
+      }
+    },
+    error: function(err) {
+      setSheetStatus('Không tải được Sheet. Kiểm tra lại link CSV đã publish chưa.', 'err');
+    }
+  });
+}
+
+function csvDateToInputDate(dStr) {
+  // Convert dd/mm/yyyy (or dd/mm) to yyyy-mm-dd for <input type="date">
+  if (!dStr) return '';
+  const parts = dStr.trim().split('/');
+  if (parts.length < 2) return '';
+  const day = parts[0].padStart(2, '0');
+  const month = parts[1].padStart(2, '0');
+  const year = parts.length > 2 ? parts[2] : String(new Date().getFullYear());
+  return year + '-' + month + '-' + day;
+}
+
+function buildDataFromRows(rows) {
+  const first = rows[0];
+  const name = (first['Khách hàng'] || '-').trim();
+  const phone = (first['SDT'] || '-').trim();
+  const nationality = (first['QuocTich'] || '').trim();
+  const note = (first['Ghi chú'] || '').trim();
+
+  const hotelMap = {};
+  const hotelOrder = [];
+  const transport = [];
+  const otherServices = [];
+
+  rows.forEach(function(row) {
+    const serviceType = (row['Loại dịch vụ'] || 'Khách sạn').trim();
+
+    if (serviceType === 'Di chuyển' || serviceType === 'Khác') {
+      const rawName = (row['Tên dịch vụ'] || '').trim();
+      const svcName = expandAbbreviation(rawName);
+      const route = (row['Hạng phòng'] || '').trim();
+      const svcPrice = parseFloat((row['Giá'] || '0').replace(/[^\d.-]/g, '')) || 0;
+      const svcQty = parseFloat((row['Số lượng'] || '1').replace(/[^\d.-]/g, '')) || 1;
+      const svcCheckin = (row['Check-in'] || '').trim();
+      const svcCheckout = (row['Check-out'] || '').trim();
+      if (rawName) {
+        const item = {
+          name: svcName,
+          route: route,
+          price: svcPrice,
+          qty: svcQty,
+          total: svcPrice * svcQty,
+          checkin: svcCheckin,
+          checkout: svcCheckout
+        };
+        if (serviceType === 'Di chuyển') {
+          transport.push(item);
+        } else {
+          otherServices.push(item);
+        }
+      }
+      return; // does not belong to any hotel
+    }
+
+    // serviceType === 'Khách sạn' (or blank, treated as hotel by default)
+    const hotelName = (row['Tên dịch vụ'] || '-').trim();
+    const address = (row['Địa chỉ'] || '').trim();
+    const bookingCode = (row['Mã đặt phòng'] || '').trim();
+    const key = hotelName;
+
+    if (!hotelMap[key]) {
+      hotelMap[key] = {
+        hotelName: hotelName,
+        address: address,
+        bookingCode: bookingCode,
+        amenitiesLines: [],
+        hotelNote: '',
+        rooms: []
+      };
+      hotelOrder.push(key);
+    }
+
+    const rowAmenities = (row['Bao gồm'] || '').trim();
+    if (rowAmenities) {
+      rowAmenities.split('\n').forEach(function(line) {
+        const trimmed = line.trim();
+        if (trimmed && hotelMap[key].amenitiesLines.indexOf(trimmed) === -1) {
+          hotelMap[key].amenitiesLines.push(trimmed);
+        }
+      });
+    }
+
+    const rowNote = (row['Ghi chú'] || '').trim();
+    if (rowNote && !hotelMap[key].hotelNote) {
+      hotelMap[key].hotelNote = rowNote;
+    } else if (rowNote && hotelMap[key].hotelNote && hotelMap[key].hotelNote !== rowNote) {
+      hotelMap[key].hotelNote += ' / ' + rowNote;
+    }
+
+    if (!hotelMap[key].bookingCode && bookingCode) {
+      hotelMap[key].bookingCode = bookingCode;
+    }
+
+    const checkin = (row['Check-in'] || '').trim();
+    const checkout = (row['Check-out'] || '').trim();
+    const pricePerNight = parseFloat((row['Giá'] || '0').replace(/[^\d.-]/g, '')) || 0;
+
+    const surcharges = [];
+    [1, 2].forEach(function(n) {
+      const rawName = (row['Phụ thu ' + n] || '').trim();
+      const rawPrice = (row['Giá ' + n] || '').trim();
+      if (rawName) {
+        surcharges.push({
+          name: expandAbbreviation(rawName),
+          price: parseFloat(rawPrice.replace(/[^\d.-]/g, '')) || 0
+        });
+      }
+    });
+
+    hotelMap[key].rooms.push({
+      roomtype: (row['Hạng phòng'] || '').trim(),
+      qty: (row['Số lượng'] || '').trim(),
+      guests: (row['Số người'] || '').trim(),
+      checkin: checkin,
+      checkout: checkout,
+      pricePerNight: pricePerNight,
+      surcharges: surcharges
+    });
+  });
+
+  const hotels = hotelOrder.map(function(key) {
+    const h = hotelMap[key];
+    h.amenitiesText = h.amenitiesLines.join('\n');
+    return h;
+  });
+
+  return { name: name, phone: phone, nationality: nationality, note: note, hotels: hotels, transport: transport, otherServices: otherServices };
+}
+
+function fillFormFromData(data) {
+  document.getElementById('f-name').value = data.name === '-' ? '' : data.name;
+  document.getElementById('f-phone').value = data.phone === '-' ? '' : data.phone;
+  document.getElementById('f-note').value = data.note || '';
+  fillServiceList('transport', data.transport);
+  fillServiceList('otherservices', data.otherServices);
+
+  document.getElementById('hotels-container').innerHTML = '';
+  hotelCount = 0;
+  roomTypeCounters = {};
+  surchargeCounters = {};
+
+  data.hotels.forEach(function(hotel) {
+    hotelCount++;
+    const hId = hotelCount;
+    roomTypeCounters[hId] = 0;
+    const container = document.getElementById('hotels-container');
+    const showRemoveHotel = document.querySelectorAll('#hotels-container .hotel-block').length >= 1;
+    container.insertAdjacentHTML('beforeend', hotelBlockHTML(hId, showRemoveHotel));
+
+    document.getElementById('f-hotel-' + hId).value = hotel.hotelName === '-' ? '' : hotel.hotelName;
+    document.getElementById('f-address-' + hId).value = hotel.address || '';
+    document.getElementById('f-code-' + hId).value = hotel.bookingCode || '';
+    document.getElementById('f-amenities-' + hId).value = hotel.amenitiesText || '';
+    document.getElementById('f-hotelnote-' + hId).value = hotel.hotelNote || '';
+
+    // Determine if all rooms share the same date, to set the "same date" checkbox correctly
+    const allDatesEqual = hotel.rooms.length > 0 && hotel.rooms.every(function(r) {
+      return r.checkin === hotel.rooms[0].checkin && r.checkout === hotel.rooms[0].checkout;
+    });
+    document.getElementById('f-samedate-' + hId).checked = allDatesEqual;
+    if (allDatesEqual && hotel.rooms.length > 0) {
+      document.getElementById('f-checkin-shared-' + hId).value = csvDateToInputDate(hotel.rooms[0].checkin);
+      document.getElementById('f-checkout-shared-' + hId).value = csvDateToInputDate(hotel.rooms[0].checkout);
+    }
+
+    // Remove the default empty room block created by hotelBlockHTML's addRoomTypeBlock call, we'll add our own
+    document.getElementById('roomtypes-container-' + hId).innerHTML = '';
+    roomTypeCounters[hId] = 0;
+
+    hotel.rooms.forEach(function(room) {
+      addRoomTypeBlock(hId);
+      const rId = roomTypeCounters[hId];
+      const suffix = hId + '-' + rId;
+      document.getElementById('f-roomtype-' + suffix).value = room.roomtype || '';
+      document.getElementById('f-qty-' + suffix).value = room.qty || '';
+      document.getElementById('f-guests-' + suffix).value = room.guests || '';
+      document.getElementById('f-checkin-' + suffix).value = csvDateToInputDate(room.checkin);
+      document.getElementById('f-checkout-' + suffix).value = csvDateToInputDate(room.checkout);
+      const priceEl = document.getElementById('f-price-' + suffix);
+      if (priceEl) priceEl.value = room.pricePerNight ? String(room.pricePerNight) : '';
+
+      surchargeCounters[suffix] = 0;
+      (room.surcharges || []).forEach(function(sc) {
+        addSurchargeRow(suffix);
+        const sIdx = surchargeCounters[suffix];
+        const sel = document.getElementById('f-surcharge-name-' + suffix + '-' + sIdx);
+        const customInput = document.getElementById('f-surcharge-custom-' + suffix + '-' + sIdx);
+        const priceInput2 = document.getElementById('f-surcharge-price-' + suffix + '-' + sIdx);
+        // Try to match against known abbreviation keys; otherwise use "Khác" with the expanded name
+        let matchedKey = '';
+        for (const k in ABBREVIATION_MAP) {
+          if (ABBREVIATION_MAP[k] === sc.name) { matchedKey = k; break; }
+        }
+        if (matchedKey && SURCHARGE_OPTIONS.indexOf(matchedKey) !== -1) {
+          sel.value = matchedKey;
+        } else {
+          sel.value = 'Khác';
+          customInput.style.display = 'block';
+          customInput.value = sc.name;
+        }
+        priceInput2.value = sc.price ? String(sc.price) : '';
+      });
+    });
+
+    toggleSameDate(hId);
+  });
+
+  if (data.hotels.length === 0) {
+    addHotelBlock();
+  }
+}
+
+addHotelBlock();
+</script>
+</body>
+</html>
