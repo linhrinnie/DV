@@ -116,6 +116,8 @@
   .app-ticket .code-strip .code-value { font-size: 14.5px; font-weight: 700; color: #1d4ed8; letter-spacing: 0.5px; }
   .app-ticket .section-label { font-size: 11px; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.4px; margin: 10px 0 6px; }
   .app-ticket .room-info-box { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .surcharge-summary-app { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .surcharge-summary-item { font-size: 13.5px; color: #1a1a1a; padding: 3px 0; }
   .app-ticket .shared-date-box { background: #eef2ff; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
   .app-ticket .room-detail-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
   .app-ticket .room-detail-row .rlbl { color: #6b7280; }
@@ -179,6 +181,8 @@
   .email-ticket .detail-item .d-label { font-size: 11px; color: #9aa0a8; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
   .email-ticket .detail-item .d-value { font-size: 15px; font-weight: 600; color: #111; }
   .email-ticket .room-entry { border-top: 1px dashed #e2e5ea; padding-top: 16px; margin-top: 16px; }
+  .surcharge-summary-email { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .surcharge-summary-item-email { font-size: 13.5px; color: #1a1a1a; }
   .email-ticket .room-entry-tag { display: inline-block; background: #eef2ff; color: #0f2a5c; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 3px; margin-bottom: 10px; }
   .email-ticket .amenities-email { margin-top: 16px; padding-top: 16px; border-top: 1px dashed #e2e5ea; }
   .email-ticket .amenities-email .ae-title { font-size: 11px; color: #9aa0a8; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
@@ -202,6 +206,11 @@
   .pay-app-hotel-name { font-size: 14.5px; font-weight: 700; color: #111; margin: 12px 0 6px; }
   .pay-app-hotel-name:first-child { margin-top: 0; }
   .pay-app-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+  .pay-app-detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 4px 0; }
+  .pay-app-detail-grid.two-col { grid-template-columns: 1fr 1fr; }
+  .pay-app-detail-grid > div { display: flex; flex-direction: column; gap: 2px; }
+  .pay-app-detail-grid .plbl { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .pay-app-detail-grid .pval { font-weight: 600; color: #111; font-size: 13.5px; }
   .pay-app-row .plbl { color: #6b7280; }
   .pay-app-row .pval { font-weight: 600; color: #111; text-align: right; }
   .pay-app-hotel-subtotal { display: flex; justify-content: space-between; padding: 10px 12px; background: #fce8de; border-radius: 10px; margin: 8px 0 4px; font-size: 14px; }
@@ -698,6 +707,20 @@ function aggregateSurcharges(rooms) {
   return order.map(function(key) { return map[key]; });
 }
 
+function aggregatePrices(rooms) {
+  const map = {};
+  const order = [];
+  rooms.forEach(function(room) {
+    const key = room.pricePerNight;
+    if (!map[key]) {
+      map[key] = { price: room.pricePerNight, count: 0 };
+      order.push(key);
+    }
+    map[key].count++;
+  });
+  return order.map(function(key) { return map[key]; });
+}
+
 function pad2(n) {
   return n < 10 ? '0' + n : String(n);
 }
@@ -934,17 +957,21 @@ function renderPaymentApp(data, compact) {
       hotel.rooms.forEach(function(room, rIndex) {
         html += '<div class="pay-app-room-box">';
         if (multiRoom) html += '<div class="pay-app-room-tag">Phòng ' + (rIndex+1) + '</div>';
-        html += '<div class="pay-app-row"><span class="plbl">Hạng phòng</span><span class="pval">' + escapeHtml(room.roomtype) + '</span></div>';
-        html += '<div class="pay-app-row"><span class="plbl">Số lượng</span><span class="pval">' + escapeHtml(room.qty) + '</span></div>';
-        html += '<div class="pay-app-row"><span class="plbl">Số người</span><span class="pval">' + escapeHtml(room.guests) + '</span></div>';
+        html += '<div class="pay-app-detail-grid">';
+        html += '<div><span class="plbl">Hạng phòng</span><span class="pval">' + escapeHtml(room.roomtype) + '</span></div>';
+        html += '<div><span class="plbl">Số lượng</span><span class="pval">' + escapeHtml(room.qty) + '</span></div>';
+        html += '<div><span class="plbl">Số người</span><span class="pval">' + escapeHtml(room.guests) + '</span></div>';
+        html += '</div>';
         if (!sameDate) {
           html += '<div class="pay-app-row"><span class="plbl">Ngày nhận phòng</span><span class="pval">' + room.checkin + '</span></div>';
           html += '<div class="pay-app-row"><span class="plbl">Ngày trả phòng</span><span class="pval">' + room.checkout + '</span></div>';
         }
-        html += '<div class="pay-app-row"><span class="plbl">Số đêm</span><span class="pval">' + room.nights + ' đêm</span></div>';
-        html += '<div class="pay-app-row"><span class="plbl">Giá</span><span class="pval">' + formatCurrency(room.pricePerNight) + ' (phòng/đêm)</span></div>';
-        (room.surcharges || []).forEach(function(sc) {
-          html += '<div class="pay-app-row"><span class="plbl">+ ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</span></div>';
+        html += '<div class="pay-app-detail-grid two-col">';
+        html += '<div><span class="plbl">Số đêm</span><span class="pval">' + room.nights + ' đêm</span></div>';
+        html += '<div><span class="plbl">Giá</span><span class="pval">' + formatCurrency(room.pricePerNight) + ' (phòng/đêm)</span></div>';
+        html += '</div>';
+        aggregateSurcharges([room]).forEach(function(sc) {
+          html += '<div class="pay-app-row"><span class="plbl">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</span></div>';
         });
         html += '</div>';
       });
@@ -952,6 +979,10 @@ function renderPaymentApp(data, compact) {
       const totalNights = hotel.rooms.reduce(function(s, r) { return s + r.nights; }, 0);
       html += '<div class="pay-app-row"><span class="plbl">Số phòng</span><span class="pval">' + hotel.rooms.length + ' phòng</span></div>';
       html += '<div class="pay-app-row"><span class="plbl">Tổng số đêm</span><span class="pval">' + totalNights + ' đêm</span></div>';
+      aggregatePrices(hotel.rooms).forEach(function(pr) {
+        const qtyLabel = pr.count > 1 ? pad2(pr.count) + ' ' : '';
+        html += '<div class="pay-app-row"><span class="plbl">' + qtyLabel + 'Giá</span><span class="pval">' + formatCurrency(pr.price) + ' (phòng/đêm)</span></div>';
+      });
       aggregateSurcharges(hotel.rooms).forEach(function(sc) {
         html += '<div class="pay-app-row"><span class="plbl">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</span></div>';
       });
@@ -1016,13 +1047,9 @@ function renderPaymentEmail(data, compact) {
         html += '<div><div class="d-label">Số đêm</div><div class="d-value">' + room.nights + ' đêm</div></div>';
         html += '<div><div class="d-label">Giá</div><div class="d-value">' + formatCurrency(room.pricePerNight) + ' (phòng/đêm)</div></div>';
         html += '</div>';
-        if ((room.surcharges || []).length) {
-          html += '<table class="pay-email-table" style="margin-top:8px;">';
-          room.surcharges.forEach(function(sc) {
-            html += '<tr><td class="plbl">+ ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</td></tr>';
-          });
-          html += '</table>';
-        }
+        aggregateSurcharges([room]).forEach(function(sc) {
+          html += '<table class="pay-email-table" style="margin-top:8px;"><tr><td class="plbl">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</td></tr></table>';
+        });
         html += isFirst ? '' : '</div>';
       });
     } else {
@@ -1030,6 +1057,10 @@ function renderPaymentEmail(data, compact) {
       html += '<table class="pay-email-table">';
       html += '<tr><td class="plbl">Số phòng</td><td class="pval">' + hotel.rooms.length + ' phòng</td></tr>';
       html += '<tr><td class="plbl">Tổng số đêm</td><td class="pval">' + totalNights + ' đêm</td></tr>';
+      aggregatePrices(hotel.rooms).forEach(function(pr) {
+        const qtyLabel = pr.count > 1 ? pad2(pr.count) + ' ' : '';
+        html += '<tr><td class="plbl">' + qtyLabel + 'Giá</td><td class="pval">' + formatCurrency(pr.price) + ' (phòng/đêm)</td></tr>';
+      });
       aggregateSurcharges(hotel.rooms).forEach(function(sc) {
         html += '<tr><td class="plbl">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</td></tr>';
       });
@@ -1122,6 +1153,15 @@ function renderApp(data, t) {
       }
       html += '</div>';
     });
+
+    const aggSurcharges = aggregateSurcharges(hotel.rooms);
+    if (aggSurcharges.length) {
+      html += '<div class="surcharge-summary-app">';
+      aggSurcharges.forEach(function(sc) {
+        html += '<div class="surcharge-summary-item">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</div>';
+      });
+      html += '</div>';
+    }
 
     if (hotel.checkedAmenities.length || hotel.customAmenitiesText) {
       html += '<div class="amenities-app"><div class="am-title">' + t.includes + '</div>';
@@ -1296,6 +1336,15 @@ function renderEmail(data, t) {
       }
       html += isFirst ? '' : '</div>';
     });
+
+    const aggSurchargesEmail = aggregateSurcharges(hotel.rooms);
+    if (aggSurchargesEmail.length) {
+      html += '<div class="surcharge-summary-email">';
+      aggSurchargesEmail.forEach(function(sc) {
+        html += '<span class="surcharge-summary-item-email">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</span>';
+      });
+      html += '</div>';
+    }
 
     if (hotel.checkedAmenities.length || hotel.customAmenitiesText) {
       html += '<div class="amenities-email"><div class="ae-title">' + t.includes + '</div>';
