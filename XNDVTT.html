@@ -134,8 +134,12 @@
   .transport-item-box:last-child { margin-bottom: 0; }
   .transport-item-name { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 6px; }
   .transport-item-grid { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13.5px; }
-  .transport-item-grid .ti-label { color: #6b7280; }
-  .transport-item-grid .ti-value { font-weight: 600; color: #111; }
+  .transport-item-grid > div { display: flex; flex-direction: column; gap: 2px; }
+  .transport-item-grid .ti-label { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .transport-item-grid .ti-value { font-weight: 600; color: #111; font-size: 14px; }
+  .transport-item-code { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; }
+  .transport-item-code .ti-label { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .transport-item-code .ti-value { font-weight: 600; color: #c14a1f; font-size: 14px; letter-spacing: 0.5px; }
   .transport-item-price { display: flex; justify-content: space-between; padding-top: 6px; margin-top: 4px; border-top: 1px dashed #e3e5e9; font-size: 13.5px; }
   .transport-item-price .ti-label { color: #6b7280; font-weight: 600; }
   .transport-item-price .ti-value-price { font-weight: 700; color: #c14a1f; }
@@ -678,6 +682,26 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function aggregateSurcharges(rooms) {
+  const map = {};
+  const order = [];
+  rooms.forEach(function(room) {
+    (room.surcharges || []).forEach(function(sc) {
+      const key = sc.name + '|' + sc.price;
+      if (!map[key]) {
+        map[key] = { name: sc.name, price: sc.price, count: 0 };
+        order.push(key);
+      }
+      map[key].count++;
+    });
+  });
+  return order.map(function(key) { return map[key]; });
+}
+
+function pad2(n) {
+  return n < 10 ? '0' + n : String(n);
+}
+
 function parseServiceLines(text) {
   if (!text) return [];
   return text.split('\n').map(function(line) {
@@ -701,7 +725,9 @@ function serviceRowHTML(group, idx) {
   const routeId = 'f-service-route-' + group + '-' + idx;
   const checkinId = 'f-service-checkin-' + group + '-' + idx;
   const checkoutId = 'f-service-checkout-' + group + '-' + idx;
+  const codeId = 'f-service-code-' + group + '-' + idx;
   const isTransport = group === 'transport';
+  const codeLabel = isTransport ? 'Mã đặt chỗ' : 'Mã dịch vụ';
   return '<div class="service-row-block" id="service-row-' + group + '-' + idx + '">' +
     '<div class="service-row">' +
       '<input type="text" id="' + nameId + '" placeholder="Tên dịch vụ (VD: VMB, Oto)">' +
@@ -712,13 +738,16 @@ function serviceRowHTML(group, idx) {
     (isTransport ?
       '<div class="row2" style="margin-top:6px;">' +
         '<div><label>Chặng</label><input type="text" id="' + routeId + '" placeholder="VD: HAN-SGN"></div>' +
-        '<div></div>' +
+        '<div><label>' + codeLabel + ' (không bắt buộc)</label><input type="text" id="' + codeId + '" placeholder="VD: BK12345"></div>' +
       '</div>' +
       '<div class="row2">' +
         '<div><label>Ngày đi</label><input type="date" id="' + checkinId + '"></div>' +
         '<div><label>Ngày về</label><input type="date" id="' + checkoutId + '"></div>' +
       '</div>'
-      : '') +
+      : '<div class="row2" style="margin-top:6px;">' +
+          '<div><label>' + codeLabel + ' (không bắt buộc)</label><input type="text" id="' + codeId + '" placeholder="VD: DV12345"></div>' +
+          '<div></div>' +
+        '</div>') +
   '</div>';
 }
 
@@ -744,6 +773,8 @@ function collectServiceList(group) {
     const price = parseFloat(document.getElementById('f-service-price-' + group + '-' + idx).value.replace(/[^\d.-]/g, '')) || 0;
     const qty = parseFloat(document.getElementById('f-service-qty-' + group + '-' + idx).value.replace(/[^\d.-]/g, '')) || 1;
     const item = { name: expandAbbreviation(name), price: price, qty: qty, total: price * qty };
+    const codeEl = document.getElementById('f-service-code-' + group + '-' + idx);
+    item.code = codeEl ? codeEl.value.trim() : '';
     if (group === 'transport') {
       const routeEl = document.getElementById('f-service-route-' + group + '-' + idx);
       const checkinEl = document.getElementById('f-service-checkin-' + group + '-' + idx);
@@ -766,6 +797,8 @@ function fillServiceList(group, items) {
     document.getElementById('f-service-name-' + group + '-' + idx).value = item.name || '';
     document.getElementById('f-service-price-' + group + '-' + idx).value = item.price ? String(item.price) : '';
     document.getElementById('f-service-qty-' + group + '-' + idx).value = item.qty ? String(item.qty) : '1';
+    const codeEl = document.getElementById('f-service-code-' + group + '-' + idx);
+    if (codeEl) codeEl.value = item.code || '';
     if (group === 'transport') {
       const routeEl = document.getElementById('f-service-route-' + group + '-' + idx);
       const checkinEl = document.getElementById('f-service-checkin-' + group + '-' + idx);
@@ -909,9 +942,9 @@ function renderPaymentApp(data, compact) {
           html += '<div class="pay-app-row"><span class="plbl">Ngày trả phòng</span><span class="pval">' + room.checkout + '</span></div>';
         }
         html += '<div class="pay-app-row"><span class="plbl">Số đêm</span><span class="pval">' + room.nights + ' đêm</span></div>';
-        html += '<div class="pay-app-row"><span class="plbl">Giá / đêm</span><span class="pval">' + formatCurrency(room.pricePerNight) + '</span></div>';
+        html += '<div class="pay-app-row"><span class="plbl">Giá</span><span class="pval">' + formatCurrency(room.pricePerNight) + ' (phòng/đêm)</span></div>';
         (room.surcharges || []).forEach(function(sc) {
-          html += '<div class="pay-app-row"><span class="plbl">+ ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + '</span></div>';
+          html += '<div class="pay-app-row"><span class="plbl">+ ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</span></div>';
         });
         html += '</div>';
       });
@@ -919,10 +952,8 @@ function renderPaymentApp(data, compact) {
       const totalNights = hotel.rooms.reduce(function(s, r) { return s + r.nights; }, 0);
       html += '<div class="pay-app-row"><span class="plbl">Số phòng</span><span class="pval">' + hotel.rooms.length + ' phòng</span></div>';
       html += '<div class="pay-app-row"><span class="plbl">Tổng số đêm</span><span class="pval">' + totalNights + ' đêm</span></div>';
-      hotel.rooms.forEach(function(room) {
-        (room.surcharges || []).forEach(function(sc) {
-          html += '<div class="pay-app-row"><span class="plbl">+ ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + '</span></div>';
-        });
+      aggregateSurcharges(hotel.rooms).forEach(function(sc) {
+        html += '<div class="pay-app-row"><span class="plbl">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</span></div>';
       });
     }
 
@@ -983,12 +1014,12 @@ function renderPaymentEmail(data, compact) {
         }
         html += '<div class="pay-email-detail-grid dates">';
         html += '<div><div class="d-label">Số đêm</div><div class="d-value">' + room.nights + ' đêm</div></div>';
-        html += '<div><div class="d-label">Giá / đêm</div><div class="d-value">' + formatCurrency(room.pricePerNight) + '</div></div>';
+        html += '<div><div class="d-label">Giá</div><div class="d-value">' + formatCurrency(room.pricePerNight) + ' (phòng/đêm)</div></div>';
         html += '</div>';
         if ((room.surcharges || []).length) {
           html += '<table class="pay-email-table" style="margin-top:8px;">';
           room.surcharges.forEach(function(sc) {
-            html += '<tr><td class="plbl">+ ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + '</td></tr>';
+            html += '<tr><td class="plbl">+ ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</td></tr>';
           });
           html += '</table>';
         }
@@ -999,10 +1030,8 @@ function renderPaymentEmail(data, compact) {
       html += '<table class="pay-email-table">';
       html += '<tr><td class="plbl">Số phòng</td><td class="pval">' + hotel.rooms.length + ' phòng</td></tr>';
       html += '<tr><td class="plbl">Tổng số đêm</td><td class="pval">' + totalNights + ' đêm</td></tr>';
-      hotel.rooms.forEach(function(room) {
-        (room.surcharges || []).forEach(function(sc) {
-          html += '<tr><td class="plbl">+ ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + '</td></tr>';
-        });
+      aggregateSurcharges(hotel.rooms).forEach(function(sc) {
+        html += '<tr><td class="plbl">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</td></tr>';
       });
       html += '</table>';
     }
@@ -1129,8 +1158,8 @@ function renderApp(data, t) {
 function simpleServiceLinesHTML(items, rowClass, lblClass, valClass) {
   let html = '';
   items.forEach(function(item) {
-    const qtyLabel = item.qty > 1 ? ' (x' + item.qty + ')' : '';
-    html += '<div class="' + rowClass + '"><span class="' + lblClass + '">' + escapeHtml(item.name) + qtyLabel + '</span><span class="' + valClass + '">' + formatCurrency(item.total) + '</span></div>';
+    const qtyLabel = item.qty > 1 ? pad2(item.qty) + ' ' : '';
+    html += '<div class="' + rowClass + '"><span class="' + lblClass + '">' + qtyLabel + escapeHtml(item.name) + '</span><span class="' + valClass + '">' + formatCurrency(item.total) + '</span></div>';
   });
   return html;
 }
@@ -1138,8 +1167,8 @@ function simpleServiceLinesHTML(items, rowClass, lblClass, valClass) {
 function simpleServiceLinesTableHTML(items) {
   let html = '';
   items.forEach(function(item) {
-    const qtyLabel = item.qty > 1 ? ' (x' + item.qty + ')' : '';
-    html += '<tr><td class="plbl">' + escapeHtml(item.name) + qtyLabel + '</td><td class="pval">' + formatCurrency(item.total) + '</td></tr>';
+    const qtyLabel = item.qty > 1 ? pad2(item.qty) + ' ' : '';
+    html += '<tr><td class="plbl">' + qtyLabel + escapeHtml(item.name) + '</td><td class="pval">' + formatCurrency(item.total) + '</td></tr>';
   });
   return html;
 }
@@ -1149,6 +1178,9 @@ function transportItemsHTML(items, showPrice) {
   items.forEach(function(item) {
     html += '<div class="transport-item-box">';
     html += '<div class="transport-item-name">' + escapeHtml(item.name) + '</div>';
+    if (item.code) {
+      html += '<div class="transport-item-code"><span class="ti-label">Mã đặt chỗ</span><span class="ti-value">' + escapeHtml(item.code) + '</span></div>';
+    }
     html += '<div class="transport-item-grid">';
     html += '<div><span class="ti-label">Chặng</span><span class="ti-value">' + (item.route ? escapeHtml(item.route) : '-') + '</span></div>';
     html += '<div><span class="ti-label">Số lượng</span><span class="ti-value">' + item.qty + '</span></div>';
@@ -1170,6 +1202,9 @@ function otherServiceItemsHTML(items, showPrice) {
   items.forEach(function(item) {
     html += '<div class="transport-item-box">';
     html += '<div class="transport-item-name">' + escapeHtml(item.name) + '</div>';
+    if (item.code) {
+      html += '<div class="transport-item-code"><span class="ti-label">Mã dịch vụ</span><span class="ti-value">' + escapeHtml(item.code) + '</span></div>';
+    }
     html += '<div class="transport-item-grid">';
     html += '<div><span class="ti-label">Số lượng</span><span class="ti-value">' + item.qty + '</span></div>';
     html += '</div>';
@@ -1468,6 +1503,9 @@ function buildDataFromRows(rows) {
       const svcQty = parseFloat((row['Số lượng'] || '1').replace(/[^\d.-]/g, '')) || 1;
       const svcCheckin = (row['Check-in'] || '').trim();
       const svcCheckout = (row['Check-out'] || '').trim();
+      const svcCode = serviceType === 'Di chuyển'
+        ? (row['Mã đặt phòng'] || '').trim()
+        : (row['Mã dịch vụ'] || '').trim();
       if (rawName) {
         const item = {
           name: svcName,
@@ -1476,7 +1514,8 @@ function buildDataFromRows(rows) {
           qty: svcQty,
           total: svcPrice * svcQty,
           checkin: svcCheckin,
-          checkout: svcCheckout
+          checkout: svcCheckout,
+          code: svcCode
         };
         if (serviceType === 'Di chuyển') {
           transport.push(item);
