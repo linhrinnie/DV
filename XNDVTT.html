@@ -133,7 +133,7 @@
   .transport-item-box { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
   .transport-item-box:last-child { margin-bottom: 0; }
   .transport-item-name { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 6px; }
-  .transport-item-grid { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13.5px; }
+  .transport-item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 0; font-size: 13.5px; }
   .transport-item-grid > div { display: flex; flex-direction: column; gap: 2px; }
   .transport-item-grid .ti-label { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
   .transport-item-grid .ti-value { font-weight: 600; color: #111; font-size: 14px; }
@@ -1159,7 +1159,8 @@ function simpleServiceLinesHTML(items, rowClass, lblClass, valClass) {
   let html = '';
   items.forEach(function(item) {
     const qtyLabel = item.qty > 1 ? pad2(item.qty) + ' ' : '';
-    html += '<div class="' + rowClass + '"><span class="' + lblClass + '">' + qtyLabel + escapeHtml(item.name) + '</span><span class="' + valClass + '">' + formatCurrency(item.total) + '</span></div>';
+    const routeLabel = item.route ? ' ' + escapeHtml(item.route) : '';
+    html += '<div class="' + rowClass + '"><span class="' + lblClass + '">' + qtyLabel + escapeHtml(item.name) + routeLabel + '</span><span class="' + valClass + '">' + formatCurrency(item.total) + '</span></div>';
   });
   return html;
 }
@@ -1168,7 +1169,8 @@ function simpleServiceLinesTableHTML(items) {
   let html = '';
   items.forEach(function(item) {
     const qtyLabel = item.qty > 1 ? pad2(item.qty) + ' ' : '';
-    html += '<tr><td class="plbl">' + qtyLabel + escapeHtml(item.name) + '</td><td class="pval">' + formatCurrency(item.total) + '</td></tr>';
+    const routeLabel = item.route ? ' ' + escapeHtml(item.route) : '';
+    html += '<tr><td class="plbl">' + qtyLabel + escapeHtml(item.name) + routeLabel + '</td><td class="pval">' + formatCurrency(item.total) + '</td></tr>';
   });
   return html;
 }
