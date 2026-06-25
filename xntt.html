@@ -135,10 +135,6 @@
   .transport-item-box { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
   .transport-item-box:last-child { margin-bottom: 0; }
   .transport-item-name { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 6px; }
-  .transport-item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 0; font-size: 13.5px; }
-  .transport-item-grid > div { display: flex; flex-direction: column; gap: 2px; }
-  .transport-item-grid .ti-label { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
-  .transport-item-grid .ti-value { font-weight: 600; color: #111; font-size: 14px; }
   .transport-item-code { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; }
   .transport-item-code .ti-label { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
   .transport-item-code .ti-value { font-weight: 600; color: #c14a1f; font-size: 14px; letter-spacing: 0.5px; }
@@ -334,11 +330,11 @@
           </div>
           <div id="app-hotels-container"></div>
           <div class="service-block-app" id="app-transport-block" style="display:none;">
-            <div class="service-block-title">Dịch vụ di chuyển</div>
+            <div class="service-block-title">DỊCH VỤ DI CHUYỂN</div>
             <div id="app-transport-list"></div>
           </div>
           <div class="service-block-app" id="app-otherservices-block" style="display:none;">
-            <div class="service-block-title">Dịch vụ khác</div>
+            <div class="service-block-title">DỊCH VỤ KHÁC</div>
             <div id="app-otherservices-list"></div>
           </div>
           <div class="note-strip" id="app-notebox" style="display:none;">
@@ -378,11 +374,11 @@
           <div id="email-hotels-container"></div>
 
           <div class="service-block-email" id="email-transport-block" style="display:none;">
-            <p class="service-block-title-email">Dịch vụ di chuyển</p>
+            <p class="service-block-title-email">DỊCH VỤ DI CHUYỂN</p>
             <div id="email-transport-list"></div>
           </div>
           <div class="service-block-email" id="email-otherservices-block" style="display:none;">
-            <p class="service-block-title-email">Dịch vụ khác</p>
+            <p class="service-block-title-email">DỊCH VỤ KHÁC</p>
             <div id="email-otherservices-list"></div>
           </div>
 
@@ -980,8 +976,7 @@ function renderPaymentApp(data, compact) {
       html += '<div class="pay-app-row"><span class="plbl">Số phòng</span><span class="pval">' + hotel.rooms.length + ' phòng</span></div>';
       html += '<div class="pay-app-row"><span class="plbl">Tổng số đêm</span><span class="pval">' + totalNights + ' đêm</span></div>';
       aggregatePrices(hotel.rooms).forEach(function(pr) {
-        const qtyLabel = pr.count > 1 ? pad2(pr.count) + ' ' : '';
-        html += '<div class="pay-app-row"><span class="plbl">' + qtyLabel + 'Giá</span><span class="pval">' + formatCurrency(pr.price) + ' (phòng/đêm)</span></div>';
+        html += '<div class="pay-app-row"><span class="plbl">Giá phòng</span><span class="pval">' + formatCurrency(pr.price) + ' (phòng/đêm)</span></div>';
       });
       aggregateSurcharges(hotel.rooms).forEach(function(sc) {
         html += '<div class="pay-app-row"><span class="plbl">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</span><span class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</span></div>';
@@ -992,11 +987,11 @@ function renderPaymentApp(data, compact) {
   });
 
   if ((data.transport || []).length) {
-    html += '<div class="pay-app-hotel-name">Dịch vụ di chuyển</div>';
+    html += '<div class="pay-app-hotel-name">DỊCH VỤ DI CHUYỂN</div>';
     html += compact ? simpleServiceLinesHTML(data.transport, 'pay-app-row', 'plbl', 'pval') : transportItemsHTML(data.transport, true);
   }
   if ((data.otherServices || []).length) {
-    html += '<div class="pay-app-hotel-name">Dịch vụ khác</div>';
+    html += '<div class="pay-app-hotel-name">DỊCH VỤ KHÁC</div>';
     html += compact ? simpleServiceLinesHTML(data.otherServices, 'pay-app-row', 'plbl', 'pval') : otherServiceItemsHTML(data.otherServices, true);
   }
 
@@ -1058,8 +1053,7 @@ function renderPaymentEmail(data, compact) {
       html += '<tr><td class="plbl">Số phòng</td><td class="pval">' + hotel.rooms.length + ' phòng</td></tr>';
       html += '<tr><td class="plbl">Tổng số đêm</td><td class="pval">' + totalNights + ' đêm</td></tr>';
       aggregatePrices(hotel.rooms).forEach(function(pr) {
-        const qtyLabel = pr.count > 1 ? pad2(pr.count) + ' ' : '';
-        html += '<tr><td class="plbl">' + qtyLabel + 'Giá</td><td class="pval">' + formatCurrency(pr.price) + ' (phòng/đêm)</td></tr>';
+        html += '<tr><td class="plbl">Giá phòng</td><td class="pval">' + formatCurrency(pr.price) + ' (phòng/đêm)</td></tr>';
       });
       aggregateSurcharges(hotel.rooms).forEach(function(sc) {
         html += '<tr><td class="plbl">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</td><td class="pval">' + formatCurrency(sc.price) + ' (người/đêm)</td></tr>';
@@ -1071,11 +1065,11 @@ function renderPaymentEmail(data, compact) {
   });
 
   if ((data.transport || []).length) {
-    html += '<p class="pay-email-hotel-name">Dịch vụ di chuyển</p>';
+    html += '<p class="pay-email-hotel-name">DỊCH VỤ DI CHUYỂN</p>';
     html += compact ? ('<table class="pay-email-table">' + simpleServiceLinesTableHTML(data.transport) + '</table>') : transportItemsHTML(data.transport, true);
   }
   if ((data.otherServices || []).length) {
-    html += '<p class="pay-email-hotel-name">Dịch vụ khác</p>';
+    html += '<p class="pay-email-hotel-name">DỊCH VỤ KHÁC</p>';
     html += compact ? ('<table class="pay-email-table">' + simpleServiceLinesTableHTML(data.otherServices) + '</table>') : otherServiceItemsHTML(data.otherServices, true);
   }
 
@@ -1151,17 +1145,11 @@ function renderApp(data, t) {
         html += '<div class="room-detail-row"><span class="rlbl">' + t.checkinLabel + '</span><span class="rval">' + room.checkin + '</span></div>';
         html += '<div class="room-detail-row"><span class="rlbl">' + t.checkoutLabel + '</span><span class="rval">' + room.checkout + '</span></div>';
       }
-      html += '</div>';
-    });
-
-    const aggSurcharges = aggregateSurcharges(hotel.rooms);
-    if (aggSurcharges.length) {
-      html += '<div class="surcharge-summary-app">';
-      aggSurcharges.forEach(function(sc) {
+      aggregateSurcharges([room]).forEach(function(sc) {
         html += '<div class="surcharge-summary-item">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</div>';
       });
       html += '</div>';
-    }
+    });
 
     if (hotel.checkedAmenities.length || hotel.customAmenitiesText) {
       html += '<div class="amenities-app"><div class="am-title">' + t.includes + '</div>';
@@ -1223,13 +1211,13 @@ function transportItemsHTML(items, showPrice) {
     if (item.code) {
       html += '<div class="transport-item-code"><span class="ti-label">Mã đặt chỗ</span><span class="ti-value">' + escapeHtml(item.code) + '</span></div>';
     }
-    html += '<div class="transport-item-grid">';
-    html += '<div><span class="ti-label">Chặng</span><span class="ti-value">' + (item.route ? escapeHtml(item.route) : '-') + '</span></div>';
-    html += '<div><span class="ti-label">Số lượng</span><span class="ti-value">' + item.qty + '</span></div>';
+    html += '<div class="pay-app-detail-grid two-col">';
+    html += '<div><span class="plbl">Chặng</span><span class="pval">' + (item.route ? escapeHtml(item.route) : '-') + '</span></div>';
+    html += '<div><span class="plbl">Số lượng</span><span class="pval">' + item.qty + '</span></div>';
     html += '</div>';
-    html += '<div class="transport-item-grid">';
-    html += '<div><span class="ti-label">Ngày đi</span><span class="ti-value">' + (item.checkin || '-') + '</span></div>';
-    html += '<div><span class="ti-label">Ngày về</span><span class="ti-value">' + (item.checkout || '-') + '</span></div>';
+    html += '<div class="pay-app-detail-grid two-col">';
+    html += '<div><span class="plbl">Ngày đi</span><span class="pval">' + (item.checkin || '-') + '</span></div>';
+    html += '<div><span class="plbl">Ngày về</span><span class="pval">' + (item.checkout || '-') + '</span></div>';
     html += '</div>';
     if (showPrice) {
       html += '<div class="transport-item-price"><span class="ti-label">Thành tiền</span><span class="ti-value-price">' + formatCurrency(item.total) + '</span></div>';
@@ -1247,8 +1235,8 @@ function otherServiceItemsHTML(items, showPrice) {
     if (item.code) {
       html += '<div class="transport-item-code"><span class="ti-label">Mã dịch vụ</span><span class="ti-value">' + escapeHtml(item.code) + '</span></div>';
     }
-    html += '<div class="transport-item-grid">';
-    html += '<div><span class="ti-label">Số lượng</span><span class="ti-value">' + item.qty + '</span></div>';
+    html += '<div class="pay-app-detail-grid two-col">';
+    html += '<div><span class="plbl">Số lượng</span><span class="pval">' + item.qty + '</span></div>';
     html += '</div>';
     if (showPrice) {
       html += '<div class="transport-item-price"><span class="ti-label">Thành tiền</span><span class="ti-value-price">' + formatCurrency(item.total) + '</span></div>';
@@ -1334,17 +1322,16 @@ function renderEmail(data, t) {
         html += '<div class="detail-item"><div class="d-label">' + t.checkoutLabel + '</div><div class="d-value">' + room.checkout + '</div></div>';
         html += '</div>';
       }
+      const roomSurchargesEmail = aggregateSurcharges([room]);
+      if (roomSurchargesEmail.length) {
+        html += '<div class="surcharge-summary-email">';
+        roomSurchargesEmail.forEach(function(sc) {
+          html += '<span class="surcharge-summary-item-email">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</span>';
+        });
+        html += '</div>';
+      }
       html += isFirst ? '' : '</div>';
     });
-
-    const aggSurchargesEmail = aggregateSurcharges(hotel.rooms);
-    if (aggSurchargesEmail.length) {
-      html += '<div class="surcharge-summary-email">';
-      aggSurchargesEmail.forEach(function(sc) {
-        html += '<span class="surcharge-summary-item-email">' + pad2(sc.count) + ' ' + escapeHtml(sc.name) + '</span>';
-      });
-      html += '</div>';
-    }
 
     if (hotel.checkedAmenities.length || hotel.customAmenitiesText) {
       html += '<div class="amenities-email"><div class="ae-title">' + t.includes + '</div>';
